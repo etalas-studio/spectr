@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import type { Router } from "express";
 import type { HttpDeps } from "./types.js";
 import { requireAdmin } from "../../auth/middleware.js";
@@ -280,6 +281,27 @@ export function registerAdminRoutes(router: Router, deps: HttpDeps): void {
       res.status(200).json({ ok: true });
     } catch (err) {
       sendCaughtErrorExpress(res, err, "admin user delete");
+    }
+  });
+
+  // ── Health check ──────────────────────────────────────────────────────────
+
+  router.get("/api/admin/health", async (req, res) => {
+    if (!(await requireAdmin(db, req))) {
+      res.status(401).json({ error: "unauthorized" });
+      return;
+    }
+    try {
+      const start = Date.now();
+      await db.execute(sql`SELECT 1`);
+      const dbMs = Date.now() - start;
+      res.status(200).json({
+        ok: true,
+        dbMs,
+        uptimeSeconds: Math.floor(process.uptime()),
+      });
+    } catch (err) {
+      sendCaughtErrorExpress(res, err, "admin health");
     }
   });
 }

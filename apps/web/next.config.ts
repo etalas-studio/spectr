@@ -10,6 +10,14 @@ const config: NextConfig = {
   images: {
     remotePatterns: [{ hostname: 'placehold.co' }],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:4319/api/:path*',
+      },
+    ]
+  },
 }
 
 export default withMDX(config)

@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pencil, Trash2, ChevronDown } from 'lucide-react'
+import {
+  Table, TextField, Select, Button, Text, Badge,
+  Dialog, AlertDialog, IconButton, Flex, Box,
+} from '@radix-ui/themes'
 import {
   fetchAdminUsers,
   manageUserSubscription,
@@ -10,46 +13,11 @@ import {
   type AdminUser,
   type AdminUsersResponse,
 } from '../../../api/admin'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '../../../components/ui/dialog'
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectIcon,
-  SelectContent,
-  SelectItem,
-} from '../../../components/ui/select'
 
-const css = `
-  @keyframes animationIn {
-    0% { opacity: 0; transform: translateY(16px); filter: blur(6px); }
-    100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
-  }
-  .animate-in { animation: animationIn 0.5s cubic-bezier(0.16,1,0.3,1) both; }
-`
-
-function Badge({ text, color }: { text: string; color: 'green' | 'blue' | 'yellow' | 'neutral' }) {
-  const cls = {
-    green: 'bg-emerald-950 text-emerald-300',
-    blue: 'bg-blue-950 text-blue-300',
-    yellow: 'bg-yellow-950 text-yellow-300',
-    neutral: 'bg-neutral-800 text-neutral-400',
-  }[color]
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium tracking-wide ${cls}`}>{text}</span>
-}
-
-function planColor(planSlug: string | undefined): 'green' | 'blue' | 'neutral' {
-  if (planSlug === 'pro') return 'green'
-  if (planSlug === 'starter') return 'blue'
-  return 'neutral'
+function planColor(slug: string | undefined): 'green' | 'blue' | 'gray' {
+  if (slug === 'pro') return 'green'
+  if (slug === 'starter') return 'blue'
+  return 'gray'
 }
 
 function formatExpiry(iso: string | null): string {
@@ -57,13 +25,9 @@ function formatExpiry(iso: string | null): string {
   return new Date(iso).toLocaleDateString('id-ID')
 }
 
-// ── Edit modal ─────────────────────────────────────────────────────────────
-// Uses native <select> elements — avoids nested base-ui portal breakage.
+// ── Edit modal ────────────────────────────────────────────────────────────────
 function EditModal({
-  user,
-  open,
-  onClose,
-  onSave,
+  user, open, onClose, onSave,
 }: {
   user: AdminUser | null
   open: boolean
@@ -85,106 +49,74 @@ function EditModal({
   if (!user) return null
 
   const handleSave = async () => {
-    setSaving(true)
-    setErr(null)
-    try {
-      await onSave(user, { role, plan })
-      onClose()
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Save failed')
-    } finally {
-      setSaving(false)
-    }
+    setSaving(true); setErr(null)
+    try { await onSave(user, { role, plan }); onClose() }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Save failed') }
+    finally { setSaving(false) }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent showCloseButton className="max-w-sm overflow-y-auto max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle>Edit user</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          {/* Email — locked */}
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Email</label>
-            <input
-              readOnly
-              value={user.email}
-              className="w-full rounded-lg bg-neutral-800/40 px-3 py-2 text-sm text-neutral-500 outline-none cursor-not-allowed select-none"
-            />
-          </div>
-
-          {/* Username — locked */}
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Username</label>
-            <input
-              readOnly
-              value={user.username}
-              className="w-full rounded-lg bg-neutral-800/40 px-3 py-2 text-sm text-neutral-400 outline-none cursor-not-allowed select-none"
-            />
-          </div>
-
-          {/* Role */}
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Role</label>
-            <Select<'user' | 'admin'> value={role} onValueChange={(v) => { if (v) setRole(v) }}>
-              <SelectTrigger className="h-9 w-full gap-2 rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-sm text-neutral-200 outline-none focus:border-neutral-500">
-                <SelectValue />
-                <SelectIcon className="ml-auto"><ChevronDown className="h-3.5 w-3.5 text-neutral-500" /></SelectIcon>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">user</SelectItem>
-                <SelectItem value="admin">admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Plan */}
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Plan</label>
-            <Select<'pro' | 'starter' | ''> value={plan} onValueChange={(v) => setPlan(v ?? '')}>
-              <SelectTrigger className="h-9 w-full gap-2 rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-sm text-neutral-200 outline-none focus:border-neutral-500">
-                <SelectValue placeholder="No plan" />
-                <SelectIcon className="ml-auto"><ChevronDown className="h-3.5 w-3.5 text-neutral-500" /></SelectIcon>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No plan</SelectItem>
-                <SelectItem value="starter">Starter</SelectItem>
-                <SelectItem value="pro">Pro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {err && <p className="text-xs text-red-400">{err}</p>}
-        </div>
-
-        <DialogFooter className="mx-0 mb-0 border-t-0 bg-transparent p-0">
-          <DialogClose
-            render={<button className="rounded-lg bg-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-700" />}
-          >
-            Cancel
-          </DialogClose>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
-          >
+    <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <Dialog.Content maxWidth="400px">
+        <Flex justify="between" align="start">
+          <Box>
+            <Dialog.Title mb="1">Edit user</Dialog.Title>
+            <Dialog.Description size="2" color="gray">Update role and plan for this account.</Dialog.Description>
+          </Box>
+          <Dialog.Close>
+            <IconButton size="1" variant="ghost" color="gray" aria-label="Close">
+              <iconify-icon icon="solar:close-linear" width="18" />
+            </IconButton>
+          </Dialog.Close>
+        </Flex>
+        <Flex direction="column" gap="3" mt="3">
+          <Box>
+            <Text as="label" size="1" color="gray">Email</Text>
+            <TextField.Root value={user.email} readOnly mt="1" style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+          </Box>
+          <Box>
+            <Text as="label" size="1" color="gray">Username</Text>
+            <TextField.Root value={user.username} readOnly mt="1" style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+          </Box>
+          <Box>
+            <Text as="label" size="1" color="gray">Role</Text>
+            <Select.Root value={role} onValueChange={(v) => setRole(v as 'user' | 'admin')}>
+              <Select.Trigger mt="1" style={{ width: '100%' }} />
+              <Select.Content>
+                <Select.Item value="user">user</Select.Item>
+                <Select.Item value="admin">admin</Select.Item>
+              </Select.Content>
+            </Select.Root>
+          </Box>
+          <Box>
+            <Text as="label" size="1" color="gray">Plan</Text>
+            <Select.Root value={plan} onValueChange={(v) => setPlan(v as 'pro' | 'starter' | '')}>
+              <Select.Trigger mt="1" placeholder="No plan" style={{ width: '100%' }} />
+              <Select.Content>
+                <Select.Item value="">No plan</Select.Item>
+                <Select.Item value="starter">Starter</Select.Item>
+                <Select.Item value="pro">Pro</Select.Item>
+              </Select.Content>
+            </Select.Root>
+          </Box>
+          {err && <Text size="1" color="red">{err}</Text>}
+        </Flex>
+        <Flex gap="2" justify="end" mt="4">
+          <Dialog.Close>
+            <Button variant="soft" color="gray">Cancel</Button>
+          </Dialog.Close>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </Button>
+        </Flex>
+      </Dialog.Content>
+    </Dialog.Root>
   )
 }
 
-// ── Delete confirm modal ───────────────────────────────────────────────────
+// ── Delete confirm modal ───────────────────────────────────────────────────────
 function DeleteModal({
-  user,
-  open,
-  busy,
-  onClose,
-  onConfirm,
+  user, open, busy, onClose, onConfirm,
 }: {
   user: AdminUser | null
   open: boolean
@@ -194,43 +126,43 @@ function DeleteModal({
 }) {
   if (!user) return null
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent showCloseButton={false} className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Delete user</DialogTitle>
-          <DialogDescription>
-            This permanently deletes{' '}
-            <span className="font-medium text-foreground">{user.email}</span> and all their data.
-            This cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose
-            render={
-              <button className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm hover:bg-neutral-800" />
-            }
-          >
-            Cancel
-          </DialogClose>
-          <button
-            onClick={() => onConfirm(user)}
-            disabled={busy}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
-          >
-            {busy ? 'Deleting…' : 'Delete permanently'}
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AlertDialog.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <AlertDialog.Content maxWidth="400px">
+        <Flex justify="between" align="start">
+          <Box>
+            <AlertDialog.Title mb="1">Delete user</AlertDialog.Title>
+            <AlertDialog.Description size="2" color="gray">This action is irreversible and cannot be recovered.</AlertDialog.Description>
+          </Box>
+          <AlertDialog.Cancel>
+            <IconButton size="1" variant="ghost" color="gray" aria-label="Close">
+              <iconify-icon icon="solar:close-linear" width="18" />
+            </IconButton>
+          </AlertDialog.Cancel>
+        </Flex>
+        <Text size="2" mt="3" as="p">
+          This permanently deletes <strong>{user.email}</strong> and all their data.
+        </Text>
+        <Flex gap="2" justify="end" mt="4">
+          <AlertDialog.Cancel>
+            <Button variant="soft" color="gray">Cancel</Button>
+          </AlertDialog.Cancel>
+          <AlertDialog.Action>
+            <Button color="red" disabled={busy} onClick={() => onConfirm(user)}>
+              {busy ? 'Deleting…' : 'Delete permanently'}
+            </Button>
+          </AlertDialog.Action>
+        </Flex>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function UsersPage() {
   const [data, setData] = useState<AdminUsersResponse | null>(null)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState<'' | 'admin' | 'user'>('')
+  const [roleFilter, setRoleFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [actionMsg, setActionMsg] = useState<{ kind: 'error' | 'notice'; text: string } | null>(null)
@@ -251,41 +183,25 @@ export default function UsersPage() {
   useEffect(() => { void load(page, search, roleFilter) }, [load, page, search, roleFilter])
 
   const handleSearch = (val: string) => {
-    setSearch(val)
-    setPage(1)
+    setSearch(val); setPage(1)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => void load(1, val, roleFilter), 350)
   }
 
   const run = async (fn: () => Promise<unknown>, okMsg: string) => {
-    setBusy(true)
-    setActionMsg(null)
-    try {
-      await fn()
-      setActionMsg({ kind: 'notice', text: okMsg })
-      await load(page, search, roleFilter)
-    } catch (err) {
-      setActionMsg({ kind: 'error', text: err instanceof Error ? err.message : 'Action failed' })
-    } finally {
-      setBusy(false)
-    }
+    setBusy(true); setActionMsg(null)
+    try { await fn(); setActionMsg({ kind: 'notice', text: okMsg }); await load(page, search, roleFilter) }
+    catch (err) { setActionMsg({ kind: 'error', text: err instanceof Error ? err.message : 'Action failed' }) }
+    finally { setBusy(false) }
   }
 
-  const saveUser = async (
-    user: AdminUser,
-    changes: { role: 'user' | 'admin'; plan: 'pro' | 'starter' | '' },
-  ) => {
+  const saveUser = async (user: AdminUser, changes: { role: 'user' | 'admin'; plan: 'pro' | 'starter' | '' }) => {
     const ops: Promise<unknown>[] = []
-    if (changes.role !== user.role) {
-      ops.push(setUserRole(user.id, changes.role))
-    }
+    if (changes.role !== user.role) ops.push(setUserRole(user.id, changes.role))
     const currentPlan = (user.subscription?.planSlug ?? '') as 'pro' | 'starter' | ''
     if (changes.plan !== currentPlan) {
-      if (changes.plan) {
-        ops.push(manageUserSubscription(user.id, 'grant', changes.plan))
-      } else {
-        ops.push(manageUserSubscription(user.id, 'cancel'))
-      }
+      if (changes.plan) ops.push(manageUserSubscription(user.id, 'grant', changes.plan))
+      else ops.push(manageUserSubscription(user.id, 'cancel'))
     }
     await Promise.all(ops)
     await load(page, search, roleFilter)
@@ -293,187 +209,119 @@ export default function UsersPage() {
   }
 
   const deleteUser = (user: AdminUser) => {
-    void run(
-      async () => { await deleteAdminUser(user.id); setDeleteTarget(null) },
-      `Deleted ${user.email}`,
-    )
+    void run(async () => { await deleteAdminUser(user.id); setDeleteTarget(null) }, `Deleted ${user.email}`)
   }
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 1
 
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
-        {error}
-      </div>
-    )
-  }
-
   return (
-    <>
-      <style>{css}</style>
-      <div className="space-y-6">
-        <header className="animate-in" style={{ animationDelay: '0ms' }}>
-          <h1 className="text-3xl tracking-wide text-white" style={{ fontFamily: "'Bowlby One', sans-serif" }}>Users</h1>
-          {data && <p className="mt-1 text-sm text-neutral-500">{data.total} total</p>}
-        </header>
+    <div className="flex flex-col h-full">
+      <header className="shrink-0 px-10 pt-10 pb-6" style={{ backgroundColor: '#f8fafc' }}>
+        <h1 className="text-3xl font-semibold tracking-tight" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Users</h1>
+        <p className="mt-1.5 text-sm" style={{ color: 'rgba(0,0,0,0.45)' }}>All accounts, roles, and subscriptions.</p>
+      </header>
 
-        {/* Search + filter */}
-        <div className="animate-in flex flex-wrap gap-3" style={{ animationDelay: '80ms' }}>
-          <input
-            type="search"
-            placeholder="Search email or username…"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="h-9 w-64 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-sm outline-none placeholder:text-neutral-600 focus:border-neutral-500"
-          />
-          <Select<'' | 'admin' | 'user'>
-            value={roleFilter}
-            onValueChange={(v) => { setRoleFilter(v ?? ''); setPage(1) }}
-          >
-            <SelectTrigger className="h-9 gap-2 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-sm text-neutral-300 outline-none focus:border-neutral-500">
-              <SelectValue placeholder="All roles" />
-              <SelectIcon><ChevronDown className="h-3.5 w-3.5 text-neutral-500" /></SelectIcon>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All roles</SelectItem>
-              <SelectItem value="user">User</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex-1 overflow-y-auto px-10 pb-10">
+        {error && <Text size="2" color="red">{error}</Text>}
 
-        {actionMsg && (
-          <div
-            className={`animate-in flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${
-              actionMsg.kind === 'error'
-                ? 'border-red-900 bg-red-950/40 text-red-300'
-                : 'border-emerald-900 bg-emerald-950/40 text-emerald-300'
-            }`}
-          >
-            <span>{actionMsg.text}</span>
-            <button
-              type="button"
-              onClick={() => setActionMsg(null)}
-              aria-label="Dismiss"
-              className="shrink-0 rounded px-1 text-neutral-400 hover:text-neutral-200"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {!data ? (
-          <div className="text-sm text-neutral-500">Loading…</div>
-        ) : (
-          <>
-            <div
-              className="animate-in overflow-x-auto rounded-xl border border-neutral-800"
-              style={{ animationDelay: '140ms' }}
-            >
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800 text-left text-neutral-500">
-                    <th className="px-4 py-3 font-normal">Email</th>
-                    <th className="px-4 py-3 font-normal">Role</th>
-                    <th className="px-4 py-3 font-normal">Plan</th>
-                    <th className="px-4 py-3 font-normal">Expires</th>
-                    <th className="px-4 py-3 font-normal"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.users.map((user) => (
-                    <tr key={user.id} className="border-b border-neutral-800/50 last:border-0">
-                      <td className="px-4 py-3">
-                        <div className="text-neutral-200">{user.email}</div>
-                        <div className="text-xs text-neutral-500">{user.username}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge text={user.role} color={user.role === 'admin' ? 'yellow' : 'neutral'} />
-                      </td>
-                      <td className="px-4 py-3">
-                        {user.subscription ? (
-                          <Badge
-                            text={user.subscription.planSlug}
-                            color={planColor(user.subscription.planSlug)}
-                          />
-                        ) : (
-                          <span className="text-neutral-600">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-400">
-                        {formatExpiry(user.subscription?.expiresAt ?? null)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setEditTarget(user)}
-                            title="Edit user"
-                            aria-label="Edit user"
-                            className="flex h-7 w-7 items-center justify-center rounded text-neutral-500 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(user)}
-                            title="Delete user"
-                            aria-label="Delete user"
-                            className="flex h-7 w-7 items-center justify-center rounded text-red-500/50 transition-colors hover:bg-red-950/30 hover:text-red-400"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {data.users.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-600">
-                        No users found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 text-sm">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="rounded border border-neutral-700 px-3 py-1.5 hover:bg-neutral-800 disabled:opacity-40"
-                >
-                  Prev
-                </button>
-                <span className="text-neutral-400">{page} / {totalPages}</span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="rounded border border-neutral-700 px-3 py-1.5 hover:bg-neutral-800 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
+        <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-6">
+          {/* Toolbar */}
+          <Flex wrap="wrap" gap="3" align="center">
+            <TextField.Root
+              placeholder="Search email or username…"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              style={{ width: 260 }}
+            />
+            <Select.Root value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1) }}>
+              <Select.Trigger placeholder="All roles" />
+              <Select.Content>
+                <Select.Item value="">All roles</Select.Item>
+                <Select.Item value="user">User</Select.Item>
+                <Select.Item value="admin">Admin</Select.Item>
+              </Select.Content>
+            </Select.Root>
+            {actionMsg && (
+              <Flex align="center" gap="2" ml="auto">
+                <Text size="1" color={actionMsg.kind === 'error' ? 'red' : 'green'}>{actionMsg.text}</Text>
+                <IconButton size="1" variant="ghost" color="gray" onClick={() => setActionMsg(null)}>✕</IconButton>
+              </Flex>
             )}
-          </>
-        )}
+          </Flex>
 
-        <EditModal
-          user={editTarget}
-          open={editTarget !== null}
-          onClose={() => setEditTarget(null)}
-          onSave={saveUser}
-        />
+          {/* Table */}
+          {!data ? (
+            <Text size="2" color="gray">Loading…</Text>
+          ) : (
+            <Table.Root variant="surface" size="2">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell>Email</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Username</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Role</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Plan</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Expires</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {data.users.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5}>
+                      <Text size="2" color="gray">No users found.</Text>
+                    </Table.Cell>
+                  </Table.Row>
+                ) : data.users.map((user) => (
+                  <Table.Row key={user.id}>
+                    <Table.Cell><Text size="2">{user.email}</Text></Table.Cell>
+                    <Table.Cell><Text size="2" color="gray">{user.username}</Text></Table.Cell>
+                    <Table.Cell>
+                      <Badge color={user.role === 'admin' ? 'yellow' : 'gray'} variant="soft" radius="full">
+                        {user.role}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      {user.subscription ? (
+                        <Badge color={planColor(user.subscription.planSlug)} variant="soft" radius="full">
+                          {user.subscription.planSlug}
+                        </Badge>
+                      ) : <Text color="gray">—</Text>}
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text size="2" color="gray">{formatExpiry(user.subscription?.expiresAt ?? null)}</Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Flex gap="3">
+                        <IconButton size="2" variant="ghost" color="gray" onClick={() => setEditTarget(user)} aria-label="Edit user">
+                          <iconify-icon icon="solar:pen-linear" width="16" />
+                        </IconButton>
+                        <IconButton size="2" variant="ghost" color="red" onClick={() => setDeleteTarget(user)} aria-label="Delete user">
+                          <iconify-icon icon="solar:trash-bin-trash-linear" width="16" />
+                        </IconButton>
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
+          )}
 
-        <DeleteModal
-          user={deleteTarget}
-          open={deleteTarget !== null}
-          busy={busy}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={deleteUser}
-        />
+          {/* Pagination */}
+          <Flex justify="between" align="center" pt="2">
+            <Text size="1" color="gray">Page {page} of {totalPages}</Text>
+            <Flex gap="1">
+              <Button variant="soft" size="1" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                <Button key={n} size="1" variant={n === page ? 'solid' : 'soft'} onClick={() => setPage(n)}>{n}</Button>
+              ))}
+              <Button variant="soft" size="1" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</Button>
+            </Flex>
+          </Flex>
+        </div>
       </div>
-    </>
+
+      <EditModal user={editTarget} open={editTarget !== null} onClose={() => setEditTarget(null)} onSave={saveUser} />
+      <DeleteModal user={deleteTarget} open={deleteTarget !== null} busy={busy} onClose={() => setDeleteTarget(null)} onConfirm={deleteUser} />
+    </div>
   )
 }
