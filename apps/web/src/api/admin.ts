@@ -106,6 +106,23 @@ export interface AdminStatsPayment {
   createdAt: string
 }
 
+export interface TopUser {
+  email: string
+  username: string
+  totalUsage: number
+}
+
+export interface RevenueTrendPoint {
+  month: string
+  revenue: number
+}
+
+export interface AdminHealth {
+  ok: boolean
+  dbMs: number
+  uptimeSeconds: number
+}
+
 export interface AdminStats {
   totalUsers: number
   activeProSubs: number
@@ -118,6 +135,8 @@ export interface AdminStats {
   expiringSubsCount: number
   newUsersThisMonth: number
   newUsersLastMonth: number
+  topUsersByUsage?: TopUser[]
+  revenueTrend?: RevenueTrendPoint[]
 }
 
 export interface AdminUser {
@@ -162,6 +181,10 @@ export function setUserRole(
 
 export function deleteAdminUser(userId: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(apiUrl(`/api/admin/users/${userId}`), { method: 'DELETE' })
+}
+
+export function fetchAdminHealth(): Promise<AdminHealth> {
+  return request<AdminHealth>(apiUrl('/api/admin/health'))
 }
 
 export function manageUserSubscription(

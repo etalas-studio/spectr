@@ -16,7 +16,7 @@ From a messy brief to an execution-ready spec. One pipeline — PRD, prototype, 
 ## Project Structure
 
 ```
-sandwich-2/
+spectr/
 ├── apps/
 │   ├── server/          # Backend API server (port 4319) — Clean Architecture
 │   │   ├── domain/      # Entities and core types (no external deps)
@@ -54,8 +54,8 @@ sandwich-2/
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/etalas-studio/sandwich-2.git
-cd sandwich-2
+git clone https://github.com/etalas-studio/spectr.git
+cd spectr
 npm install          # installs backend + frontend deps
 ```
 
@@ -69,10 +69,10 @@ brew install postgresql@16
 brew services start postgresql@16
 
 # Create the database
-createdb sandwich
+createdb spectr
 
 # Verify it's running
-psql -d sandwich -c "SELECT 1"
+psql -d spectr -c "SELECT 1"
 ```
 
 ### 3. Environment Variables
@@ -82,7 +82,7 @@ Create `.env` in the project root:
 ```env
 # ─── Server ───
 PORT=4319
-DATABASE_URL=postgresql://localhost:5432/sandwich
+DATABASE_URL=postgresql://localhost:5432/spectr
 TRUSTED_HOSTS=localhost
 
 # Set to PRODUCTION for real Midtrans payments. Anything else uses simulation.
@@ -109,14 +109,14 @@ MIDTRANS_IS_PRODUCTION=false    # sandbox by default
 R2_ACCOUNT_ID=your-account-id
 R2_ACCESS_KEY_ID=your-access-key-id
 R2_SECRET_ACCESS_KEY=your-secret-access-key
-R2_BUCKET_NAME=sandwich-attachments
+R2_BUCKET_NAME=spectr-attachments
 R2_PUBLIC_URL=                  # optional public base URL; if empty, presigned URLs are used
 ```
 
 ### 4. Run Database Migrations
 
 ```bash
-DATABASE_URL=postgresql://localhost:5432/sandwich \
+DATABASE_URL=postgresql://localhost:5432/spectr \
   npx drizzle-kit migrate --config apps/server/drizzle.config.ts
 ```
 
@@ -160,12 +160,12 @@ Core tables managed by Drizzle ORM (`apps/server/db/schema.ts`):
 1. Edit `apps/server/db/schema.ts`
 2. Generate migration:
    ```bash
-   DATABASE_URL=postgresql://localhost:5432/sandwich \
+   DATABASE_URL=postgresql://localhost:5432/spectr \
      npx drizzle-kit generate --config apps/server/drizzle.config.ts
    ```
 3. Apply migration:
    ```bash
-   DATABASE_URL=postgresql://localhost:5432/sandwich \
+   DATABASE_URL=postgresql://localhost:5432/spectr \
      npx drizzle-kit migrate --config apps/server/drizzle.config.ts
    ```
 

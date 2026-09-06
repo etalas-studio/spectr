@@ -12,6 +12,17 @@ export interface AdminStatsPayment {
   createdAt: string;
 }
 
+export interface TopUser {
+  email: string;
+  username: string;
+  totalUsage: number;
+}
+
+export interface RevenueTrendPoint {
+  month: string; // "YYYY-MM"
+  revenue: number;
+}
+
 export interface AdminStats {
   totalUsers: number;
   activeProSubs: number;
@@ -24,6 +35,8 @@ export interface AdminStats {
   expiringSubsCount: number;
   newUsersThisMonth: number;
   newUsersLastMonth: number;
+  topUsersByUsage: TopUser[];
+  revenueTrend: RevenueTrendPoint[];
 }
 
 export interface AdminUser {
@@ -145,6 +158,35 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
       .where(and(gt(users.createdAt, lastMonthStart), lt(users.createdAt, monthStart))),
   ]);
 
+  // Top 5 users by all-time usage
+  const topUsersRaw = await db
+    .select({
+      email: users.email,
+      username: users.username,
+      totalUsage: sql<number>`cast(sum(${usage.count}) as int)`,
+    })
+    .from(usage)
+    .innerJoin(users, eq(usage.userId, users.id))
+    .groupBy(users.id, users.email, users.username)
+    .orderBy(desc(sql`sum(${usage.count})`))
+    .limit(5);
+
+  // Revenue trend: last 6 months grouped by year_month
+  const trendRows = await db
+    .select({
+      month: sql<string>`to_char(${payments.createdAt}, 'YYYY-MM')`,
+      revenue: sql<number>`cast(sum(cast(${payments.grossAmount} as numeric)) as int)`,
+    })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.transactionStatus, "settlement"),
+        gt(payments.createdAt, new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)),
+      ),
+    )
+    .groupBy(sql`to_char(${payments.createdAt}, 'YYYY-MM')`)
+    .orderBy(sql`to_char(${payments.createdAt}, 'YYYY-MM')`);
+
   return {
     totalUsers,
     activeProSubs,
@@ -178,6 +220,15 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
     expiringSubsCount: expiringRow?.count ?? 0,
     newUsersThisMonth: newThisRow?.count ?? 0,
     newUsersLastMonth: newLastRow?.count ?? 0,
+    topUsersByUsage: topUsersRaw.map((r) => ({
+      email: r.email,
+      username: r.username,
+      totalUsage: r.totalUsage ?? 0,
+    })),
+    revenueTrend: trendRows.map((r) => ({
+      month: r.month ?? "",
+      revenue: r.revenue ?? 0,
+    })),
   };
 }
 
