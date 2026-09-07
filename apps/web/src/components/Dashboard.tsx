@@ -577,6 +577,8 @@ function ChatView({
         }
       }
       const text = followUp.trim()
+      // Capture liveMessages synchronously before any state update resets them
+      const committedLive = liveMessages.slice()
       const message = await createMessage(conversationId, {
         content: text,
         attachmentIds: uploaded.map(a => a.id),
@@ -590,7 +592,7 @@ function ChatView({
         const last = prev[prev.length - 1]
         return [
           ...prev.slice(0, -1),
-          { ...last, aiMessages: liveMessages },
+          { ...last, aiMessages: committedLive.length > 0 ? committedLive : last.aiMessages },
           { user: message.content, attachments: message.attachments, aiMessages: [] },
         ]
       })
