@@ -11,6 +11,8 @@ import { useUsage } from '../hooks/useUsage'
 import { apiUrl } from '../api/base'
 import Settings from './Settings'
 import HelpPage from './HelpPage'
+import ProfilePage from './ProfilePage'
+import PaymentPage from './PaymentPage'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
 import DocumentsPanel from './DocumentsPanel'
 import DocumentCard from './DocumentCard'
@@ -29,11 +31,11 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([buf], { type: mime })
 }
 
-const bowlby = "'Bowlby One', system-ui"
+const bowlby = "'Instrument Serif', serif"
 const inter = "'Inter', sans-serif"
 
 const NAV = [
-  { label: 'Documents', icon: 'solar:folder-linear', id: 'documents' },
+  { label: 'Artifacts', icon: 'solar:documents-linear', id: 'documents' },
 ]
 
 const QUICK_TYPES = [
@@ -828,7 +830,7 @@ function loadDraft(): { prompt: string; attachments: AttachedFile[]; activeType:
 }
 
 function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, projectTitle, onClearProject }: PromptBoxProps) {
-  const { t: tr } = useLanguage()
+  const { lang, t: tr } = useLanguage()
   const [draft] = useState(loadDraft)
   const [prompt, setPrompt] = useState(draft.prompt)
   const [pendingType, setPendingType] = useState<string>(draft.activeType ?? (defaultType === 'general' ? '' : defaultType))
@@ -879,96 +881,117 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
     }
   }
 
+  const suggestions = lang === 'id'
+    ? [
+        { icon: 'solar:chart-2-linear', text: 'Rangkum performa minggu ini' },
+        { icon: 'solar:pen-new-square-linear', text: 'Buat creative brief untuk kampanye baru' },
+        { icon: 'solar:wallet-linear', text: 'Rencanakan anggaran bulan depan' },
+      ]
+    : [
+        { icon: 'solar:chart-2-linear', text: "Summarize this week's performance" },
+        { icon: 'solar:pen-new-square-linear', text: 'Draft a creative brief' },
+        { icon: 'solar:wallet-linear', text: "Plan next month's budget" },
+      ]
+
   return (
-    <div className="w-full rounded-2xl" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}>
+    <div className="w-full">
       <style>{`
         @keyframes streamFadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
         .stream-live { animation: streamFadeIn 0.15s ease-out; }
         .stream-cursor { display: inline-block; width: 2px; height: 1em; background: currentColor; margin-left: 1px; vertical-align: text-bottom; animation: cursorBlink 0.7s step-end infinite; }
       `}</style>
-      {projectId && projectTitle && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-t-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.04)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-          <p className="text-xs truncate" style={{ color: '#6b7280' }}>
-            {tr('dash_new_chat_in')} <span style={{ color: '#111827', fontWeight: 600 }}>{projectTitle}</span>
-          </p>
-          <button onClick={onClearProject} aria-label="Clear project" className="p-1 rounded shrink-0" style={{ color: 'rgba(0,0,0,0.4)' }}>
-            <iconify-icon icon="solar:close-circle-linear" width="14" />
-          </button>
-        </div>
-      )}
-      {atLimit && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-t-2xl" style={{ backgroundColor: 'rgba(59,130,246,0.1)', borderBottom: '1px solid rgba(59,130,246,0.2)' }}>
-          <div>
-            <p className="text-xs font-semibold" style={{ color: '#1e40af' }}>{tr('plan_limit_title')}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>{tr('plan_limit_desc')}</p>
+      {/* Main input card */}
+      <div className="rounded-2xl" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+        {projectId && projectTitle && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-t-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+            <p className="text-xs truncate" style={{ color: '#6b7280' }}>
+              {tr('dash_new_chat_in')} <span style={{ color: '#111827', fontWeight: 600 }}>{projectTitle}</span>
+            </p>
+            <button onClick={onClearProject} aria-label="Clear project" className="p-1 rounded shrink-0" style={{ color: 'rgba(0,0,0,0.4)' }}>
+              <iconify-icon icon="solar:close-circle-linear" width="14" />
+            </button>
           </div>
-          <a href="/pay?plan=pro" className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold text-white whitespace-nowrap" style={{ backgroundColor: '#3b82f6' }}>
-            {tr('plan_limit_upgrade')}
-          </a>
-        </div>
-      )}
-      <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-        <DeliverableTypeSelect value={pendingType} onChange={setPendingType} />
-        {!usage.isPro && !atLimit && (
-          <span className="ml-auto shrink-0 text-[11px] pl-2" style={{ color: 'rgba(0,0,0,0.3)' }}>{usage.used}/{usage.limit ?? '∞'} this month</span>
         )}
-      </div>
-
-      <textarea
-        value={prompt}
-        onChange={e => setPrompt(e.target.value)}
-        onKeyDown={e => { if (!atLimit && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void handleSubmit() } }}
-        placeholder="Write a message..."
-        rows={3}
-        disabled={atLimit}
-        className="w-full resize-none bg-transparent text-sm outline-none px-4 py-3 leading-relaxed text-gray-800 placeholder:text-black/30 disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ minHeight: '72px' }}
-      />
-
-      {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-4 pb-2">
-          {attachments.map((a, i) => (
-            <div key={i} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }}>
-              {a.type.startsWith('image/') ? <img src={a.dataUrl} className="w-4 h-4 rounded object-cover" alt="" /> : <iconify-icon icon="solar:document-linear" width="12" />}
-              <span className="max-w-[100px] truncate">{a.name}</span>
-              <button onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} className="opacity-40 hover:opacity-100" aria-label="Remove attachment">
-                <iconify-icon icon="solar:close-circle-bold" width="12" />
-              </button>
+        {atLimit && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-t-2xl" style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderBottom: '1px solid rgba(59,130,246,0.15)' }}>
+            <div>
+              <p className="text-xs font-semibold" style={{ color: '#1e40af' }}>{tr('plan_limit_title')}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>{tr('plan_limit_desc')}</p>
             </div>
-          ))}
-        </div>
-      )}
+            <a href="/pay?plan=pro" className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold text-white whitespace-nowrap" style={{ backgroundColor: '#3b82f6' }}>
+              {tr('plan_limit_upgrade')}
+            </a>
+          </div>
+        )}
 
-      {error && <p className="px-4 pb-2 text-xs" style={{ color: '#3b82f6' }}>{error}</p>}
+        {/* Textarea */}
+        <textarea
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          onKeyDown={e => { if (!atLimit && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void handleSubmit() } }}
+          placeholder={lang === 'id' ? 'Tanyakan apapun atau @ untuk menambah konteks' : 'Ask anything or @ to add context'}
+          disabled={atLimit}
+          className="w-full resize-none bg-transparent text-sm outline-none px-5 pt-5 pb-3 leading-relaxed text-gray-800 placeholder:text-black/30 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ minHeight: '88px' }}
+        />
 
-      <div className="flex items-center justify-between px-4 pb-4 pt-1">
-        <div className="flex items-center gap-1">
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 px-5 pb-3">
+            {attachments.map((a, i) => (
+              <div key={i} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }}>
+                {a.type.startsWith('image/') ? <img src={a.dataUrl} className="w-4 h-4 rounded object-cover" alt="" /> : <iconify-icon icon="solar:document-linear" width="12" />}
+                <span className="max-w-[100px] truncate">{a.name}</span>
+                <button onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} className="opacity-40 hover:opacity-100" aria-label="Remove attachment">
+                  <iconify-icon icon="solar:close-circle-bold" width="12" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && <p className="px-5 pb-2 text-xs" style={{ color: '#ef4444' }}>{error}</p>}
+
+        {/* Bottom toolbar */}
+        <div className="flex items-center gap-2 px-4 pb-4">
           <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
           <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-          <button onClick={() => imageInputRef.current?.click()} aria-label="Attach image" className="p-1.5 rounded-lg transition-colors" style={{ color: 'rgba(0,0,0,0.4)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
+          <button onClick={() => fileInputRef.current?.click()} aria-label="Attach file"
+            className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors"
+            style={{ borderColor: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.5)' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-            <iconify-icon icon="solar:gallery-linear" width="18" />
+            <iconify-icon icon="solar:add-circle-linear" width="16" />
           </button>
-          <button onClick={() => fileInputRef.current?.click()} aria-label="Attach file" className="p-1.5 rounded-lg transition-colors" style={{ color: 'rgba(0,0,0,0.4)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-            <iconify-icon icon="solar:paperclip-linear" width="18" />
-          </button>
-          <span className="text-xs ml-1" style={{ color: 'rgba(0,0,0,0.3)' }}>⌘↵</span>
-        </div>
-        <div className="flex items-center gap-2">
+
+          <div className="flex-1" />
+
+          <DeliverableTypeSelect value={pendingType} onChange={setPendingType} />
+
           <button
             onClick={() => void handleSubmit()}
             disabled={isSubmitting || !prompt.trim() || atLimit}
             aria-label="Send"
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-40 active:scale-95"
-            style={{ backgroundColor: '#3b82f6' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-30 active:scale-95"
+            style={{ backgroundColor: prompt.trim() && !atLimit ? '#3b82f6' : 'rgba(0,0,0,0.08)' }}
           >
-            <iconify-icon icon={isSubmitting ? 'solar:refresh-linear' : 'solar:arrow-up-linear'} width="15" style={{ color: '#ffffff' }} />
+            <iconify-icon icon={isSubmitting ? 'solar:refresh-linear' : 'solar:arrow-up-linear'} width="14" style={{ color: prompt.trim() && !atLimit ? '#ffffff' : 'rgba(0,0,0,0.4)' }} />
           </button>
         </div>
+      </div>
+
+      {/* Suggestion rows */}
+      <div className="mt-4 flex flex-col gap-1">
+        {suggestions.map(s => (
+          <button key={s.text} onClick={() => setPrompt(s.text)}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-left transition-colors w-full"
+            style={{ color: '#374151' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
+            <iconify-icon icon={s.icon} width="16" style={{ color: 'rgba(0,0,0,0.35)', flexShrink: 0 }} />
+            {s.text}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -1094,6 +1117,38 @@ function HomeOverview({
   const cardStyle = { backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }
   const sectionStyle = { backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }
 
+  if (conversations.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-xl">
+          {/* Plan badge */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
+              <iconify-icon icon={usage.isPro ? 'solar:crown-linear' : 'solar:lightning-bold'} width="14" style={{ color: 'rgba(0,0,0,0.5)' }} />
+              <span className="text-sm" style={{ color: 'rgba(0,0,0,0.5)' }}>{usage.isPro ? 'Pro Plan' : 'Free Plan'}</span>
+              {!usage.isPro && (
+                <a href="/pay?plan=pro" className="text-sm font-semibold" style={{ color: '#3b82f6' }}>Upgrade</a>
+              )}
+            </div>
+          </div>
+
+          {/* Heading */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <img src="/logo.png" alt="Spectr" className="w-6 h-6" />
+            </div>
+            <h1 className="text-2xl font-semibold" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>
+              {lang === 'id' ? 'Ada yang bisa gue bantu?' : 'How can I help you today?'}
+            </h1>
+          </div>
+
+          {/* Prompt box */}
+          <PromptBox onSuccess={onSuccess} usage={usage} projectId={projectId} projectTitle={projectTitle} onClearProject={onClearProject} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-8">
       <div className="max-w-5xl mx-auto flex flex-col gap-6">
@@ -1104,7 +1159,7 @@ function HomeOverview({
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#3b82f6' }}>{dateStr}</p>
             <h1 className="text-2xl tracking-tighter mt-1" style={{ color: '#111827', fontFamily: bowlby }}>{tr(greetingKey).toUpperCase()}, {username.toUpperCase()}</h1>
             <p className="text-sm mt-0.5" style={{ color: '#9ca3af' }}>
-              {conversations.length === 0 ? tr('home_subtitle_empty') : tr('home_subtitle_count').replace('{n}', String(conversations.length))}
+              {tr('home_subtitle_count').replace('{n}', String(conversations.length))}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1441,6 +1496,8 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
     } catch { return null }
   })
   const [showAccountMenu, setShowAccountMenu] = useState(false)
+  const [activeModal, setActiveModal] = useState<'settings' | 'help' | 'profile' | 'upgrade' | null>(null)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showChatMenu, setShowChatMenu] = useState(false)
   const [renamingTitle, setRenamingTitle] = useState(false)
   const [renameValue, setRenameValue] = useState('')
@@ -1470,6 +1527,14 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
 
   const { data: sub, isLoading: subLoading } = useSubscription()
   const queryClient = useQueryClient()
+
+  const sidebarChecklist: { key: StringKey; done: boolean }[] = [
+    { key: 'home_check_1', done: conversations.length > 0 },
+    { key: 'home_check_2', done: conversations.filter(t => t.status === 'done').length > 0 },
+    { key: 'home_check_3', done: new Set(conversations.map(t => t.type)).size >= 3 },
+    { key: 'home_check_5', done: usage.isPro },
+  ]
+  const sidebarChecklistDone = sidebarChecklist.filter(c => c.done).length
 
   // Fire Snap for a pending Pro upgrade set during registration
   useEffect(() => {
@@ -1845,8 +1910,6 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
   const isHomePage = activeNav === 'home'
 
   const renderPage = () => {
-    if (activeNav === 'settings') return <Settings />
-    if (activeNav === 'help') return <HelpPage />
     if (activeNav === 'documents') return <DocumentsPanel onOpenDocument={setOpenDocumentId} onOpenConversation={(convId, docTitle) => {
       const conv = convId
         ? conversations.find(c => c.id === convId)
@@ -1880,7 +1943,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
       {sidebarOpen && (
       <>
         <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
-        <aside className="flex flex-col w-56 shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto h-full border-r" style={{ backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }}>
+        <aside className="flex flex-col w-64 shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto h-full border-r" style={{ backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }}>
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="Spectr" className="h-6 w-auto brightness-0" />
@@ -1971,25 +2034,30 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
           </div>
         </div>
 
+        {/* Tutorial checklist */}
+        {sidebarChecklistDone < sidebarChecklist.length && (
+          <div className="px-3 pb-2 shrink-0">
+            <div className="rounded-xl p-3" style={{ backgroundColor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.12)' }}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[13px] font-semibold" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Mulai perjalananmu</p>
+                <p className="text-[10px]" style={{ color: 'rgba(0,0,0,0.35)' }}>{sidebarChecklistDone}/{sidebarChecklist.length}</p>
+              </div>
+              <div className="w-full rounded-full h-1 mb-2.5" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
+                <div className="h-1 rounded-full transition-all" style={{ width: `${(sidebarChecklistDone / sidebarChecklist.length) * 100}%`, backgroundColor: '#3b82f6' }} />
+              </div>
+              {sidebarChecklist.map(c => (
+                <div key={c.key} className="flex items-center gap-2 py-1">
+                  <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: c.done ? '#3b82f6' : 'rgba(0,0,0,0.08)' }}>
+                    {c.done && <iconify-icon icon="solar:check-circle-bold" width="12" style={{ color: '#fff' }} />}
+                  </div>
+                  <p className="text-[11px]" style={{ color: c.done ? 'rgba(0,0,0,0.35)' : '#374151', textDecoration: c.done ? 'line-through' : 'none' }}>{tr(c.key)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="border-t px-2 py-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-          <button
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left mb-0.5 transition-colors"
-            style={{ color: activeNav === 'help' ? '#111827' : 'rgba(0,0,0,0.4)', backgroundColor: activeNav === 'help' ? 'rgba(0,0,0,0.06)' : '' }}
-            onClick={() => setActiveNav('help')}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = activeNav === 'help' ? 'rgba(0,0,0,0.06)' : '')}>
-            <iconify-icon icon="solar:question-circle-linear" width="15" />
-            Help &amp; Docs
-          </button>
-          <button
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left mb-2 transition-colors"
-            style={{ color: activeNav === 'settings' ? '#111827' : 'rgba(0,0,0,0.4)', backgroundColor: activeNav === 'settings' ? 'rgba(0,0,0,0.06)' : '' }}
-            onClick={() => setActiveNav('settings')}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = activeNav === 'settings' ? 'rgba(0,0,0,0.06)' : '')}>
-            <iconify-icon icon="solar:settings-linear" width="15" />
-            Settings
-          </button>
           <button onClick={() => setShowAccountMenu(true)} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors"
             style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.08)')}
@@ -2002,24 +2070,68 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
 
           {showAccountMenu && (
             <div className="fixed inset-0 z-50" onClick={() => setShowAccountMenu(false)}>
-              <style>{`@keyframes slideUp { from { transform: translateY(4px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
-              <div className="absolute bottom-16 left-3 w-[200px] rounded-xl overflow-hidden"
-                style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', animation: 'slideUp 0.15s ease-out', boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}
+              <style>{`@keyframes slideUp { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+              <div className="absolute bottom-[72px] left-2 w-[240px] rounded-2xl overflow-hidden"
+                style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', animation: 'slideUp 0.15s ease-out', boxShadow: '0 16px 40px rgba(0,0,0,0.14)' }}
                 onClick={e => e.stopPropagation()}>
-                <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-                  <p className="text-sm font-semibold" style={{ color: '#111827' }}>{username}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>{email}</p>
-                </div>
+
+                {/* User info row */}
+                <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                  onClick={() => { setShowAccountMenu(false); setActiveModal('profile') }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ backgroundColor: '#0d9488' }}>
+                    {username.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: '#111827' }}>{username}</p>
+                    <p className="text-xs truncate" style={{ color: 'rgba(0,0,0,0.4)' }}>{sub?.planSlug === 'pro' ? 'Pro' : 'Starter'}</p>
+                  </div>
+                </button>
+
+                <div className="mx-4" style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.06)' }} />
+
+                {/* Main actions */}
                 <div className="p-2">
-                  <button onClick={() => { setShowAccountMenu(false); logout() }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors text-left"
-                    style={{ color: '#f87171' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.08)')}
+                  {[
+                    { icon: 'solar:crown-linear', label: 'Upgrade Plan', action: () => { setShowAccountMenu(false); setActiveModal('upgrade') }, color: '#f59e0b' },
+                    { icon: 'solar:user-circle-linear', label: 'Profile', action: () => { setShowAccountMenu(false); setActiveModal('profile') } },
+                    { icon: 'solar:settings-linear', label: 'Settings', action: () => { setShowAccountMenu(false); setActiveModal('settings') } },
+                  ].map(item => (
+                    <button key={item.label} onClick={item.action}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
+                      style={{ color: item.color ?? '#374151' }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
+                      <iconify-icon icon={item.icon} width="16" style={{ color: item.color ?? 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mx-4" style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.06)' }} />
+
+                {/* Bottom: Bantuan + Keluar */}
+                <div className="p-2">
+                  <button onClick={() => { setShowAccountMenu(false); setActiveModal('help') }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
+                    style={{ color: '#374151' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                    <iconify-icon icon="solar:logout-2-linear" width="15" />
-                    Logout
+                    <iconify-icon icon="solar:question-circle-linear" width="16" style={{ color: 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
+                    <span className="flex-1">Help</span>
+                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14" style={{ color: 'rgba(0,0,0,0.3)' }} />
+                  </button>
+                  <button onClick={() => { setShowAccountMenu(false); setShowLogoutConfirm(true) }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
+                    style={{ color: '#f87171' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.06)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
+                    <iconify-icon icon="solar:logout-2-linear" width="16" style={{ color: '#f87171', flexShrink: 0 }} />
+                    Sign out
                   </button>
                 </div>
+
               </div>
             </div>
           )}
@@ -2184,7 +2296,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
         </div>
 
         {/* Content */}
-        {activeNav === 'settings' || activeNav === 'help' ? renderPage() : chatState ? (
+        {chatState ? (
           <div className="flex-1 min-h-0">
             <ChatView
               initialPrompt={chatState.prompt}
@@ -2288,6 +2400,80 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
           </div>
         </>
       )}
+
+      {/* ── Logout confirm ── */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowLogoutConfirm(false)}>
+          <div className="w-full max-w-sm rounded-2xl p-6"
+            style={{ backgroundColor: '#ffffff', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(248,113,113,0.1)' }}>
+              <iconify-icon icon="solar:logout-2-linear" width="20" style={{ color: '#f87171' }} />
+            </div>
+            <h2 className="text-lg font-semibold mb-1" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Sign out?</h2>
+            <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>You'll need to sign in again to access your account.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}>
+                Cancel
+              </button>
+              <button onClick={() => { setShowLogoutConfirm(false); logout() }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#f87171' }}>
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modals ── */}
+      {activeModal && (() => {
+        const meta = {
+          settings: { title: 'Settings', sub: 'Manage your preferences' },
+          help:     { title: 'Help & Docs', sub: 'Spectr usage guide' },
+          profile:  { title: 'Profile', sub: 'Your account information' },
+          upgrade:  { title: 'Upgrade Plan', sub: 'Choose the plan that fits you' },
+        }[activeModal]
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setActiveModal(null)}>
+            <div className="relative w-full flex flex-col rounded-2xl overflow-hidden"
+              style={{ maxWidth: activeModal === 'upgrade' ? '480px' : '560px', maxHeight: '88vh', backgroundColor: '#ffffff', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* Modal header */}
+              <div className="flex items-start justify-between px-6 pt-6 pb-4 shrink-0" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                <div>
+                  <h2 className="text-2xl font-semibold" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>{meta.title}</h2>
+                  <p className="text-sm mt-0.5" style={{ color: '#9ca3af' }}>{meta.sub}</p>
+                </div>
+                <button onClick={() => setActiveModal(null)}
+                  className="mt-0.5 p-1 transition-colors shrink-0"
+                  style={{ color: 'rgba(0,0,0,0.35)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#111827')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(0,0,0,0.35)')}>
+                  <iconify-icon icon="solar:close-linear" width="18" />
+                </button>
+              </div>
+
+              {/* Modal body — strip bg/padding from sub-components via wrapper */}
+              <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#ffffff' }}>
+                {activeModal === 'settings' && <Settings onUpgrade={() => setActiveModal('upgrade')} />}
+                {activeModal === 'help' && <HelpPage />}
+                {activeModal === 'profile' && <ProfilePage />}
+                {activeModal === 'upgrade' && <PaymentPage />}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
