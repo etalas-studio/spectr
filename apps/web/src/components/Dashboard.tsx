@@ -1714,14 +1714,14 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors text-left"
             style={activeNav === 'home' && !chatState
               ? { backgroundColor: '#3b82f6', color: '#ffffff' }
-              : { backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }
+              : { color: '#374151' }
             }
-            onMouseEnter={e => { if (!(activeNav === 'home' && !chatState)) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.08)' }}
-            onMouseLeave={e => { if (!(activeNav === 'home' && !chatState)) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)' }}
+            onMouseEnter={e => { if (!(activeNav === 'home' && !chatState)) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)' }}
+            onMouseLeave={e => { if (!(activeNav === 'home' && !chatState)) e.currentTarget.style.backgroundColor = '' }}
           >
             <iconify-icon icon="solar:folder-with-files-linear" width="15" />
             {tr('dash_new_project')}
-            <iconify-icon icon="solar:pen-new-square-linear" width="13" style={{ marginLeft: 'auto', color: '#ffffff' }} />
+            <iconify-icon icon="solar:pen-new-square-linear" width="13" style={{ marginLeft: 'auto', color: activeNav === 'home' && !chatState ? '#ffffff' : 'rgba(0,0,0,0.3)' }} />
           </button>
 
           {/* Pipeline items */}
@@ -2013,11 +2013,21 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowLogoutConfirm(false)}>
-          <div className="w-full max-w-sm rounded-2xl p-6"
+          <div className="w-full max-w-sm rounded-2xl p-6 relative"
             style={{ backgroundColor: '#ffffff', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
             onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(248,113,113,0.1)' }}>
-              <iconify-icon icon="solar:logout-2-linear" width="20" style={{ color: '#f87171' }} />
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
+                <iconify-icon icon="solar:logout-2-linear" width="20" style={{ color: '#ef4444' }} />
+              </div>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="p-1 rounded-lg transition-colors"
+                style={{ color: 'rgba(0,0,0,0.3)' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
+                <iconify-icon icon="solar:close-linear" width="18" />
+              </button>
             </div>
             <h2 className="text-lg font-semibold mb-1" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Sign out?</h2>
             <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>You'll need to sign in again to access your account.</p>
@@ -2031,7 +2041,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
               </button>
               <button onClick={() => { setShowLogoutConfirm(false); logout() }}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#f87171' }}>
+                style={{ backgroundColor: '#ef4444' }}>
                 Sign out
               </button>
             </div>
