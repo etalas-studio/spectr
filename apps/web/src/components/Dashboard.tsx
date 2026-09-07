@@ -500,6 +500,31 @@ function ChatView({
     e.target.value = ''
   }, [])
 
+  const addFiles = useCallback((files: FileList | File[]) => {
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => setAttachments(p => [...p, { name: file.name, type: file.type, dataUrl: reader.result as string }])
+      reader.readAsDataURL(file)
+    })
+  }, [])
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const imgs = Array.from(e.clipboardData.items)
+      .filter(i => i.kind === 'file' && i.type.startsWith('image/'))
+      .map(i => i.getAsFile()).filter((f): f is File => f !== null)
+    if (imgs.length > 0) addFiles(imgs)
+  }, [addFiles])
+
+  const [isDragging, setIsDragging] = useState(false)
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (Array.from(e.dataTransfer.items).some(i => i.kind === 'file')) { e.preventDefault(); setIsDragging(true) }
+  }, [])
+  const handleDragLeave = useCallback(() => setIsDragging(false), [])
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false)
+    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files)
+  }, [addFiles])
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [liveMessages, streaming])
 
   // Load saved messages when opening a conversation.
@@ -749,7 +774,19 @@ function ChatView({
 
       {/* Input — Claude style floating */}
       <div className="shrink-0 px-6 pb-6 pt-3">
-        <div className="max-w-3xl mx-auto rounded-2xl" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}>
+        <div
+          className="max-w-3xl mx-auto rounded-2xl transition-colors"
+          style={{ backgroundColor: '#ffffff', border: isDragging ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.08)' }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDragging && (
+            <div className="flex items-center justify-center gap-2 px-5 pt-4 pb-1 text-sm" style={{ color: '#3b82f6' }}>
+              <iconify-icon icon="solar:upload-linear" width="16" />
+              Drop to attach
+            </div>
+          )}
           {chatError && (
             <p className="px-5 pt-3 text-xs" style={{ color: '#3b82f6' }}>{chatError}</p>
           )}
@@ -764,6 +801,7 @@ function ChatView({
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); handleSend() }
             }}
+            onPaste={handlePaste}
             placeholder="Write a message..."
             rows={2}
             disabled={streaming}
@@ -865,6 +903,31 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
     e.target.value = ''
   }, [])
 
+  const addFilesHome = useCallback((files: FileList | File[]) => {
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => setAttachments(p => [...p, { name: file.name, type: file.type, dataUrl: reader.result as string }])
+      reader.readAsDataURL(file)
+    })
+  }, [])
+
+  const handlePasteHome = useCallback((e: React.ClipboardEvent) => {
+    const imgs = Array.from(e.clipboardData.items)
+      .filter(i => i.kind === 'file' && i.type.startsWith('image/'))
+      .map(i => i.getAsFile()).filter((f): f is File => f !== null)
+    if (imgs.length > 0) addFilesHome(imgs)
+  }, [addFilesHome])
+
+  const [isDraggingHome, setIsDraggingHome] = useState(false)
+  const handleDragOverHome = useCallback((e: React.DragEvent) => {
+    if (Array.from(e.dataTransfer.items).some(i => i.kind === 'file')) { e.preventDefault(); setIsDraggingHome(true) }
+  }, [])
+  const handleDragLeaveHome = useCallback(() => setIsDraggingHome(false), [])
+  const handleDropHome = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setIsDraggingHome(false)
+    if (e.dataTransfer.files.length > 0) addFilesHome(e.dataTransfer.files)
+  }, [addFilesHome])
+
   const handleSubmit = async () => {
     if (!prompt.trim()) return
     if (atLimit) return
@@ -917,7 +980,13 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
         .stream-cursor { display: inline-block; width: 2px; height: 1em; background: currentColor; margin-left: 1px; vertical-align: text-bottom; animation: cursorBlink 0.7s step-end infinite; }
       `}</style>
       {/* Main input card */}
-      <div className="rounded-2xl" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+      <div
+        className="rounded-2xl transition-colors"
+        style={{ backgroundColor: '#ffffff', border: isDraggingHome ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+        onDragOver={handleDragOverHome}
+        onDragLeave={handleDragLeaveHome}
+        onDrop={handleDropHome}
+      >
         {projectId && projectTitle && (
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-t-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
             <p className="text-xs truncate" style={{ color: '#6b7280' }}>
@@ -942,6 +1011,7 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
           onKeyDown={e => { if (!atLimit && e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); void handleSubmit() } }}
+          onPaste={handlePasteHome}
           placeholder={lang === 'id' ? 'Tanyakan sesuatu...' : 'Ask me anything...'}
           disabled={atLimit}
           className="w-full resize-none bg-transparent text-sm outline-none px-5 pt-5 pb-3 leading-relaxed text-gray-800 placeholder:text-black/30 disabled:opacity-40 disabled:cursor-not-allowed"
