@@ -40,6 +40,7 @@ export default function SetupForm({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const params = useSearchParams();
   const plan = params.get('plan') === 'pro' ? 'pro' : 'starter';
 
@@ -47,6 +48,8 @@ export default function SetupForm({
     e.preventDefault();
     if (isPending) return;
     if (!username.trim() || !email.trim() || !password.trim()) return;
+    if (password.length < 8) { setPasswordError(tr('setup_password_min')); return; }
+    setPasswordError(null);
     try {
       await onSubmit(username.trim(), email.trim(), password);
       // Remember the chosen plan so a Pro signup is charged right after
@@ -204,6 +207,12 @@ export default function SetupForm({
               <iconify-icon icon={showPassword ? "solar:eye-closed-linear" : "solar:eye-linear"} width="18" />
             </button>
           </div>
+
+          {passwordError && (
+            <p className="text-xs font-medium rounded-lg px-3 py-2" style={{ color: "#f91814", backgroundColor: "rgba(249,24,20,0.08)" }}>
+              {passwordError}
+            </p>
+          )}
 
           {error && (
             <p className="text-xs font-medium rounded-lg px-3 py-2" style={{ color: "#f91814", backgroundColor: "rgba(249,24,20,0.08)" }}>

@@ -341,6 +341,7 @@ const STRINGS = {
   setup_username_label: { en: 'Username', id: 'Username' },
   setup_email_label: { en: 'Email', id: 'Email' },
   setup_password_label: { en: 'Password', id: 'Password' },
+  setup_password_min: { en: 'Password must be at least 8 characters', id: 'Password minimal 8 karakter' },
   setup_cta: { en: 'Create account', id: 'Buat akun' },
   setup_pending: { en: 'Creating account…', id: 'Membuat akun...' },
 
