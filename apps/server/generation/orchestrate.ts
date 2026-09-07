@@ -97,6 +97,36 @@ const DELIVERABLE_LABEL: Record<DocumentType, string> = {
   mom: "MOM",
 };
 
+/**
+ * Derive a short, professional document title from the conversation title + type.
+ * Strips filler phrases (e.g. "buatkan", "tolong", "buat saya"), keeps the core topic,
+ * prefixes with the type label, and caps at ~60 chars.
+ */
+export function deriveDocumentTitle(conversationTitle: string, type: DocumentType): string {
+  const label = DELIVERABLE_LABEL[type] ?? type.toUpperCase();
+
+  // Strip common Indonesian/English filler words at the start
+  const stripped = conversationTitle
+    .trim()
+    .replace(/^(buatkan|buat|tolong|tolong buatkan|please|create|generate|make|write|bikinin|bikini|bikin)\s+/i, "")
+    .replace(/^(saya|gue|gw|aku|i want|i need|i want you to|i need you to)\s+/i, "")
+    .replace(/^(a |an |the )/i, "")
+    // Remove leading type labels if already there (e.g. "PRD untuk ..." → "untuk ...")
+    .replace(new RegExp(`^${label}\\s+(untuk|for|:|-)?\\s*`, "i"), "")
+    .replace(/^(prd|quotation|prototype|specs|mom)\s+(untuk|for|:|-)?\\s*/i, "")
+    .trim();
+
+  const core = stripped || conversationTitle.trim();
+
+  // Title case first letter, lowercase rest
+  const formatted = core.charAt(0).toUpperCase() + core.slice(1);
+
+  // Cap at 55 chars for the topic part
+  const topic = formatted.length > 55 ? formatted.slice(0, 52).trimEnd() + "…" : formatted;
+
+  return topic ? `${label} - ${topic}` : label;
+}
+
 /** The instruction injected into the system prompt for the current stage. */
 export function stageInstruction(stage: PipelineStage, pendingType: DocumentType | null): string {
   switch (stage) {

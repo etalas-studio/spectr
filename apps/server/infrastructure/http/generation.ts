@@ -27,6 +27,7 @@ import {
   detectPreviewIntent,
   detectCancelIntent,
   hasLogoAndColorDetails,
+  deriveDocumentTitle,
   type PipelineStage,
 } from "../../generation/orchestrate.js";
 import {
@@ -452,7 +453,7 @@ export function registerGenerationRoutes(router: Router, deps: HttpDeps): void {
             const type = pendingType;
             const isPrototype = type === "prototype";
             const relPath = deliverablePathFor(type);
-            const title = conversation.title.trim() || DELIVERABLE_LABEL[type];
+            const title = deriveDocumentTitle(conversation.title, type);
             const mode: "generate" | "refine" = refineInstruction ? "refine" : "generate";
 
             let warning: string | undefined;
@@ -478,7 +479,10 @@ export function registerGenerationRoutes(router: Router, deps: HttpDeps): void {
                 refineInstruction,
                 onChunk: (delta) => broadcast({ type: "output_chunk", text: delta }),
               });
-              if (!r.wroteFile) throw new Error(`${DELIVERABLE_LABEL[type]} tidak berhasil dibuat.`);
+              if (!r.wroteFile) {
+                console.error(`[generation] wroteFile=false convId=${conversationId} type=${type} stage=${stage} textLen=${r.text.length}`);
+                throw new Error(`${DELIVERABLE_LABEL[type]} tidak berhasil dibuat.`);
+              }
             }
 
             const fileAbs = resolveInsideProject(projectDir, relPath);
