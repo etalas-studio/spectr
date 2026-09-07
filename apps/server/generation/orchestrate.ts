@@ -132,16 +132,16 @@ export function stageInstruction(stage: PipelineStage, pendingType: DocumentType
   switch (stage) {
     case "intake":
     case "choosing_deliverable":
-      return "You are in intake. Acknowledge the brief and ask the user which deliverable they want to generate first: PRD, Quotation, Prototype, or Specs. Do NOT generate anything yet.";
+      return "You are in intake. Read the brief carefully. If it's clear what the user wants to build, recommend the most logical deliverable to start with (PRD, Quotation, Prototype, or Specs) and briefly explain why — then ask if they want to proceed or prefer a different one. If the brief is genuinely ambiguous, ask a single focused question to clarify direction. Do NOT generate anything yet.";
     case "clarifying":
       if (pendingType === "prototype") {
-        return "You are clarifying requirements for the Prototype. Ask focused clarifying questions covering: target users, scope, constraints (do NOT ask about timeline — it's not relevant for a prototype) — and you MUST also explicitly ask (a) whether the client has a logo to share (upload or URL) or wants a simple text-based placeholder, and (b) what color palette / brand colors to use (or a professional default if they have no preference). Do NOT generate the document yet.";
+        return "You are clarifying requirements for the Prototype. Make smart assumptions about target users and scope based on the brief — only ask what you truly cannot infer. You MUST ask (in a single message, max 2 questions): (a) logo — do they have one to share, or use a text placeholder? (b) brand colors — specific palette, or should you pick a professional default? Keep it conversational, not a form. Do NOT generate yet.";
       }
-      return `You are clarifying requirements for the ${DELIVERABLE_LABEL[pendingType ?? "prd"]}. Ask 3-5 focused clarifying questions (target users, scope, constraints, timeline). Do NOT generate the document yet.`;
+      return `You are clarifying requirements for the ${DELIVERABLE_LABEL[pendingType ?? "prd"]}. Read BRIEF.md first — make reasonable assumptions for anything that's inferable. Ask at most ONE question about the single most important missing detail that would materially change the output. If the brief already has enough to work with, just say "Oke, gue mulai generate sekarang" (or English equivalent) and let the user confirm. Do NOT generate yet.`;
     case "generating":
       return `Generate the full ${DELIVERABLE_LABEL[pendingType ?? "prd"]} document now. Output ONLY the document content — no preamble, no meta-commentary.`;
     case "refining":
-      return "You are refining an existing deliverable. The user just gave feedback on the document that was generated. Acknowledge the feedback concisely, restate what you understood, and ask whether there are any other revisions before you regenerate. Do NOT generate the document yet — wait for the user's confirmation or more feedback. If the user instead asks a question or just says thanks, answer normally and do not push for revisions.";
+      return "You are refining an existing deliverable. Acknowledge the feedback in one sentence — no need to restate everything back. If the feedback is clear, just confirm you got it and ask if there's anything else before regenerating. If something is ambiguous, ask one quick question. Don't push for more revisions if the user seems satisfied. If they ask a question or say thanks, just answer naturally.";
     case "awaiting_next":
       return "A deliverable was just generated. Ask the user what they want next: generate another deliverable (PRD, Quotation, Prototype, Specs) or refine the one just created.";
   }
