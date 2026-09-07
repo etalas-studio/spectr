@@ -471,12 +471,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (isAuthed) void setPreference('lang', next).catch(() => {})
   }
 
-  // Sync from the server for authenticated users (localStorage is the instant cache).
+  // Sync from the server for authenticated users — server is source of truth.
+  // If server has no preference stored, default to 'en' regardless of localStorage.
   useEffect(() => {
     if (!isAuthed) return
     void getPreference('lang')
       .then((value) => {
-        if (value === 'en' || value === 'id') setLangState(value)
+        if (value === 'en' || value === 'id') {
+          setLangState(value)
+        } else {
+          // No server preference — enforce 'en' and clear any stale localStorage value
+          setLangState('en')
+          try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
+        }
       })
       .catch(() => {})
   }, [isAuthed])

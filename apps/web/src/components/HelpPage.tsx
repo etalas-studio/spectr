@@ -44,7 +44,7 @@ const HELP_SECTIONS = [
     items: [
       {
         q: { en: "Document doesn't appear after submit?", id: 'Dokumen tidak muncul setelah submit?' },
-        a: { en: 'Try refreshing the page. If it still doesn\'t appear, check your internet connection and try submitting again.', id: 'Coba refresh halaman. Jika masih tidak muncul, pastikan koneksi internet stabil dan coba submit ulang.' },
+        a: { en: "Try refreshing the page. If it still doesn't appear, check your internet connection and try submitting again.", id: 'Coba refresh halaman. Jika masih tidak muncul, pastikan koneksi internet stabil dan coba submit ulang.' },
       },
       {
         q: { en: 'AI is responding slowly?', id: 'AI lambat merespons?' },
@@ -66,7 +66,7 @@ const HELP_SECTIONS = [
       },
       {
         q: { en: 'How do I upgrade to Pro?', id: 'Bagaimana cara upgrade ke Pro?' },
-        a: { en: 'Click the "Upgrade to PRO" button in the left sidebar. You\'ll be taken to the payment page.', id: 'Klik tombol "Upgrade ke PRO" di sidebar kiri. Anda akan diarahkan ke halaman pembayaran.' },
+        a: { en: 'Click "Upgrade paket" in the account menu at the bottom of the sidebar.', id: 'Klik "Upgrade paket" di menu akun di bagian bawah sidebar.' },
       },
       {
         q: { en: 'Is there a free plan?', id: 'Apakah ada paket gratis?' },
@@ -89,42 +89,24 @@ export default function HelpPage() {
   const L = (s: { en: string; id: string }) => s[lang]
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '32px', backgroundColor: '#f4ebe1' }}>
+    <div className="flex-1 overflow-y-auto px-6 py-6">
       <div style={{ maxWidth: '672px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ color: '#1a1a1a', fontFamily: "'Bowlby One', system-ui", fontSize: '22px', letterSpacing: '-0.03em', margin: 0 }}>
-            HELP & DOCS
-          </h1>
-          <p style={{ color: 'rgba(0,0,0,0.5)', fontSize: '13px', marginTop: '4px' }}>
-            {lang === 'id' ? 'Panduan penggunaan Spectr' : 'Spectr usage guide'}
-          </p>
-        </div>
+
 
         {/* Quick links */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
+        <div className="grid grid-cols-2 gap-3 mb-8">
           {QUICK_LINKS.map(({ icon, label, sub }) => (
-            <button
-              key={label.en}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '16px',
-                borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
-                backgroundColor: '#0a0a0a', border: '1px solid #0a0a0a',
-                transition: 'opacity 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '8px', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'rgba(249,24,20,0.2)',
-              }}>
-                <iconify-icon icon={icon} width="18" style={{ color: '#f91814' }} />
+            <button key={label.en}
+              className="flex items-center gap-3 p-4 rounded-xl text-left transition-colors"
+              style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f9fafb')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#ffffff')}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(59,130,246,0.1)' }}>
+                <iconify-icon icon={icon} width="18" style={{ color: '#3b82f6' }} />
               </div>
               <div>
-                <p style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, margin: 0 }}>{L(label)}</p>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: 0 }}>{L(sub)}</p>
+                <p className="text-sm font-semibold" style={{ color: '#111827' }}>{L(label)}</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{L(sub)}</p>
               </div>
             </button>
           ))}
@@ -132,40 +114,35 @@ export default function HelpPage() {
 
         {/* FAQ accordion */}
         {HELP_SECTIONS.map((section) => (
-          <div key={section.title.en} style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+          <div key={section.title.en} className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
               <iconify-icon icon={section.icon} width="13" style={{ color: 'rgba(0,0,0,0.4)' }} />
-              <span style={{ color: '#1a1a1a', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: '#6b7280' }}>
                 {L(section.title)}
               </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div className="flex flex-col gap-1">
               {section.items.map((item, i) => {
                 const itemKey = `${section.title.en}-${i}`
                 const isOpen = open === itemKey
                 return (
-                  <div key={itemKey} style={{ borderRadius: '10px', overflow: 'hidden', backgroundColor: '#0a0a0a' }}>
+                  <div key={itemKey} className="rounded-xl overflow-hidden" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}>
                     <button
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 20px', textAlign: 'left', cursor: 'pointer',
-                        backgroundColor: isOpen ? 'rgba(255,255,255,0.04)' : 'transparent',
-                        border: 'none', transition: 'background-color 0.15s',
-                      }}
+                      className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors"
+                      style={{ backgroundColor: isOpen ? 'rgba(59,130,246,0.04)' : 'transparent' }}
                       onClick={() => setOpen(isOpen ? null : itemKey)}
-                      onMouseEnter={e => { if (!isOpen) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)' }}
-                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = isOpen ? 'rgba(255,255,255,0.04)' : 'transparent' }}
-                    >
-                      <span style={{ color: '#ffffff', fontSize: '13px', fontWeight: 500, paddingRight: '16px' }}>{L(item.q)}</span>
+                      onMouseEnter={e => { if (!isOpen) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = isOpen ? 'rgba(59,130,246,0.04)' : 'transparent' }}>
+                      <span className="text-sm font-medium pr-4" style={{ color: '#111827' }}>{L(item.q)}</span>
                       <iconify-icon
                         icon={isOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
                         width="14"
-                        style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}
+                        style={{ color: 'rgba(0,0,0,0.3)', flexShrink: 0 }}
                       />
                     </button>
                     {isOpen && (
-                      <div style={{ padding: '0 20px 16px' }}>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{L(item.a)}</p>
+                      <div className="px-5 pb-4 pt-1">
+                        <p className="text-sm leading-relaxed" style={{ color: '#6b7280' }}>{L(item.a)}</p>
                       </div>
                     )}
                   </div>
@@ -176,38 +153,25 @@ export default function HelpPage() {
         ))}
 
         {/* Contact banner */}
-        <div style={{
-          marginTop: '32px', padding: '20px', borderRadius: '12px',
-          display: 'flex', alignItems: 'center', gap: '16px',
-          backgroundColor: '#0a0a0a', border: '1px solid #0a0a0a',
-        }}>
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: '#f91814',
-          }}>
+        <div className="mt-8 p-5 rounded-2xl flex items-center gap-4" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#3b82f6' }}>
             <iconify-icon icon="solar:chat-round-dots-bold" width="18" style={{ color: '#fff' }} />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, margin: 0 }}>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: '#111827' }}>
               {lang === 'id' ? 'Butuh bantuan lebih?' : 'Need more help?'}
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginTop: '2px', marginBottom: 0 }}>
+            <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>
               {lang === 'id' ? 'Tim kami siap membantu via chat langsung.' : 'Our team is ready to help via live chat.'}
             </p>
           </div>
-          <button style={{
-            flexShrink: 0, padding: '8px 16px', borderRadius: '999px',
-            backgroundColor: '#f91814', color: '#fff',
-            fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
-            transition: 'opacity 0.15s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
+          <button
+            className="shrink-0 px-4 py-2 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#3b82f6' }}>
             {lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}
           </button>
         </div>
+
       </div>
     </div>
   )
