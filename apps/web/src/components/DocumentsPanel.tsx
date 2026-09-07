@@ -374,24 +374,11 @@ export default function DocumentsPanel({ onOpenDocument, onOpenConversation }: {
   const [dateOpen, setDateOpen] = useState(false)
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
 
-  const DUMMY: DocumentItem[] = [
-    { id: '1', type: 'prd', title: 'PRD - Mobile Absensi Platform', currentVersionId: 'v1', latestVersionNo: 3, currentVersionNo: 3, previewUrl: null, conversationId: null, createdAt: '2026-09-01T10:00:00Z', updatedAt: '2026-09-05T10:00:00Z' },
-    { id: '2', type: 'quotation', title: 'Quotation - Enterprise Package Q3', currentVersionId: 'v1', latestVersionNo: 1, currentVersionNo: 1, previewUrl: null, conversationId: null, createdAt: '2026-09-03T08:00:00Z', updatedAt: '2026-09-03T08:00:00Z' },
-    { id: '3', type: 'prototype', title: 'Prototype - Dashboard Mobile App', currentVersionId: 'v2', latestVersionNo: 2, currentVersionNo: 2, previewUrl: null, conversationId: null, createdAt: '2026-09-04T14:00:00Z', updatedAt: '2026-09-06T14:00:00Z' },
-    { id: '4', type: 'specs', title: 'Specs - API Integration Runchise', currentVersionId: 'v1', latestVersionNo: 1, currentVersionNo: 1, previewUrl: null, conversationId: null, createdAt: '2026-09-06T09:00:00Z', updatedAt: '2026-09-06T09:00:00Z' },
-    { id: '5', type: 'prd', title: 'PRD - Fitur Export PDF Laporan', currentVersionId: 'v2', latestVersionNo: 2, currentVersionNo: 1, previewUrl: null, conversationId: null, createdAt: '2026-09-07T07:00:00Z', updatedAt: '2026-09-07T07:00:00Z' },
-    { id: '6', type: 'prototype', title: 'Prototype - Landing Page Spectr', currentVersionId: 'v1', latestVersionNo: 1, currentVersionNo: 1, previewUrl: null, conversationId: null, createdAt: '2026-09-07T11:00:00Z', updatedAt: '2026-09-07T11:00:00Z' },
-  ]
-
   const load = useCallback(() => {
-    setItems(DUMMY)
-    setLoading(false)
-    // ponytail: replace with real fetch below when done reviewing
-    // fetch(apiUrl('/api/documents'), { credentials: 'include' })
-    //   .then((r) => r.json())
-    //   .then((list: DocumentItem[]) => { setItems(list); setLoading(false) })
-    //   .catch(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetch(apiUrl('/api/documents'), { credentials: 'include' })
+      .then((r) => r.json())
+      .then((list: DocumentItem[]) => { setItems(list); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
   useEffect(() => { load() }, [load])
