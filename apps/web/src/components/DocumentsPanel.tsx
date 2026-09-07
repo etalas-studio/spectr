@@ -168,7 +168,7 @@ function PreviewPanel({ doc, onClose, onOpenConversation }: {
           <button
             onClick={() => { onOpenConversation(doc.conversationId, doc.title); onClose() }}
             className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#111827' }}
+            style={{ backgroundColor: '#3b82f6' }}
           >
             <iconify-icon icon="solar:chat-round-linear" width="14" />
             Go to chat
@@ -289,9 +289,9 @@ function ArtifactCard({ doc, onOpenConversation, onOpenPreview, onChanged }: {
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
-                style={{ backgroundColor: '#111827', color: '#ffffff', textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#374151')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#111827')}
+                style={{ backgroundColor: '#3b82f6', color: '#ffffff', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#2563eb')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#3b82f6')}
               >
                 <iconify-icon icon="solar:eye-bold" width="12" />
                 Preview
@@ -339,9 +339,9 @@ function ArtifactCard({ doc, onOpenConversation, onOpenPreview, onChanged }: {
               <button
                 onClick={() => onOpenPreview(doc)}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
-                style={{ backgroundColor: '#111827', color: '#ffffff' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#374151')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#111827')}
+                style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#2563eb')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#3b82f6')}
               >
                 <iconify-icon icon="solar:eye-bold" width="12" />
                 Open
