@@ -10,13 +10,12 @@ const config: NextConfig = {
   images: {
     remotePatterns: [{ hostname: 'placehold.co' }],
   },
+  // Dev-only: proxy /api/* and /p/* to the Express BE on 4319
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:4319/api/:path*',
-      },
-    ]
+    return process.env.NODE_ENV === 'development'
+      ? [{ source: '/api/:path*', destination: 'http://localhost:4319/api/:path*' },
+         { source: '/p/:path*', destination: 'http://localhost:4319/p/:path*' }]
+      : []
   },
 }
 
