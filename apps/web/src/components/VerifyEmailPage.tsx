@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '../lib/i18n'
-import { postVerifyEmail } from '../api/auth'
+import { postVerifyEmail, fetchMe } from '../api/auth'
 
 const bowlby = "'Bowlby One', system-ui"
 
@@ -18,7 +18,15 @@ export default function VerifyEmailPage() {
       return
     }
     postVerifyEmail(token)
-      .then(() => setState('success'))
+      .then(async () => {
+        setState('success')
+        // Try auto login — if session was set by backend, redirect straight to dashboard
+        try {
+          const me = await fetchMe()
+          if (me.status === 'authenticated') { router.replace('/dashboard'); return }
+        } catch { /* no session, fall through to manual login */ }
+        setTimeout(() => router.push('/login'), 2500)
+      })
       .catch(() => setState('error'))
   }, [token])
 

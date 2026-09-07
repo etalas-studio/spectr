@@ -421,6 +421,7 @@ function ChatView({
   ])
 
   const [isReloading, setIsReloading] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
 
   // Reconstruct committed turns from the DB history.
   const reloadTurns = useCallback(() => {
@@ -466,10 +467,22 @@ function ChatView({
     // Reload turns so the completed response is in DB-backed state before the
     // next send wipes liveMessages — fixes previous response disappearing on follow-up.
     void reloadTurns()
-  }, () => { setIsReloading(true); void reloadTurns()?.finally(() => setIsReloading(false)) })
+  }, () => {
+    setIsReloading(true)
+    void reloadTurns()?.finally(() => {
+      setIsReloading(false)
+      // If settled without output (silent fail), check last turn — if AI side is still empty, show error
+      setTurns(prev => {
+        const last = prev[prev.length - 1]
+        if (last && last.aiMessages.length === 0) {
+          setChatError(tr('pipeline_error'))
+        }
+        return prev
+      })
+    })
+  })
   const [followUp, setFollowUp] = useState('')
   const [attachments, setAttachments] = useState<AttachedFile[]>([])
-  const [chatError, setChatError] = useState<string | null>(null)
   const [editingTurnIndex, setEditingTurnIndex] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
   const [copied, setCopied] = useState(false)
@@ -611,7 +624,7 @@ function ChatView({
                         </div>
                       </div>
                     ) : (
-                      <div className="px-5 py-3 rounded-2xl text-sm leading-relaxed break-all whitespace-pre-wrap" style={{ backgroundColor: '#1e40af', color: '#ffffff' }}>
+                      <div className="px-5 py-3 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap" style={{ backgroundColor: '#1e40af', color: '#ffffff' }}>
                         {turn.user}
                       </div>
                     )}
@@ -703,7 +716,7 @@ function ChatView({
                 })}
 
                 {/* Loading state — bouncing dots until first chunk, then live text */}
-                {isLast && (streaming || isReloading) && !msgs.some(m => m.isDone || m.isError) && (() => {
+                {isLast && (streaming || isReloading) && !liveMessages.some(m => m.liveText) && !msgs.some(m => m.isDone || m.isError) && (() => {
                   const liveMsg = [...msgs].reverse().find(m => m.liveText)
                   const stageMsg = msgs.filter(m => m.stage).slice(-1)[0]
                   return (

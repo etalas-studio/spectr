@@ -330,6 +330,12 @@ body {
    AI CHAT OUTPUT (rendered markdown — light background)
    ═══════════════════════════════════════════════════════════════ */
 
+.spectr-output {
+  text-align: left !important;
+}
+.spectr-output * {
+  text-align: left;
+}
 .spectr-output p {
   margin-bottom: 0.65rem;
 }
