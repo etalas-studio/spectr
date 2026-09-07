@@ -424,6 +424,9 @@ function ChatView({
   const [chatError, setChatError] = useState<string | null>(null)
 
   // Reconstruct committed turns from the DB history.
+  // Key used to persist last AI output across page refreshes (sessionStorage survives F5, not tab close)
+  const lastOutputKey = `spectr_last_output_${conversationId}`
+
   const reloadTurns = useCallback(() => {
     if (!conversationId) return Promise.resolve()
     return getMessages(conversationId)
@@ -456,16 +459,43 @@ function ChatView({
           reconstructed.push({ user: currentUser, messageId: currentMessageId, attachments: currentAttachments, aiMessages: currentAi })
         }
         if (reconstructed.length > 0) {
+          // If last turn has no AI response yet, check sessionStorage for a cached output
+          // (handles case where user refreshed before DB write completed)
+          const last = reconstructed[reconstructed.length - 1]
+          if (last && last.aiMessages.length === 0) {
+            const cached = sessionStorage.getItem(lastOutputKey)
+            if (cached) {
+              reconstructed[reconstructed.length - 1] = {
+                ...last,
+                aiMessages: [{ role: 'ai', isDone: true, output: cached }],
+              }
+            }
+          } else {
+            // DB has AI response — no need for cached fallback
+            sessionStorage.removeItem(lastOutputKey)
+          }
           setTurns(reconstructed)
         }
       })
       .catch(() => {})
-  }, [conversationId])
+  }, [conversationId, lastOutputKey])
 
   const { messages: liveMessages, streaming } = usePipelineStream(conversationId, regenNonce, autoRun, regenerateRef, (output) => {
     updateLocalConversation(conversationId, { content: output, status: 'done' })
-    // Reload turns so the completed response is in DB-backed state before the
-    // next send wipes liveMessages — fixes previous response disappearing on follow-up.
+    // Persist last output to sessionStorage so refresh doesn't lose it
+    sessionStorage.setItem(lastOutputKey, output)
+    // Immediately commit AI output to turns in-memory so refresh doesn't lose it,
+    // then reload from DB for proper doc metadata.
+    setTurns(prev => {
+      const last = prev[prev.length - 1]
+      if (!last) return prev
+      const alreadyHasOutput = last.aiMessages.some(m => m.isDone && m.output === output)
+      if (alreadyHasOutput) return prev
+      return [
+        ...prev.slice(0, -1),
+        { ...last, aiMessages: [...last.aiMessages.filter(m => !m.isDone || m.output), { role: 'ai' as const, isDone: true, output }] }
+      ]
+    })
     void reloadTurns()
   }, () => {
     setIsReloading(true)
