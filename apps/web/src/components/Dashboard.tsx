@@ -748,7 +748,9 @@ function ChatView({
               e.target.style.height = 'auto'
               e.target.style.height = Math.min(e.target.scrollHeight, 180) + 'px'
             }}
-            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSend() } }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); handleSend() }
+            }}
             placeholder="Write a message..."
             rows={2}
             disabled={streaming}
@@ -783,7 +785,7 @@ function ChatView({
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
               <iconify-icon icon="solar:paperclip-linear" width="18" />
             </button>
-            <span className="text-xs ml-1" style={{ color: 'rgba(0,0,0,0.3)' }}>⌘↵</span>
+            <span className="text-xs ml-1" style={{ color: 'rgba(0,0,0,0.3)' }}>↵ send</span>
             <div className="flex-1" />
             <button
               onClick={handleSend}
@@ -883,14 +885,14 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
 
   const suggestions = lang === 'id'
     ? [
-        { icon: 'solar:chart-2-linear', text: 'Rangkum performa minggu ini' },
-        { icon: 'solar:pen-new-square-linear', text: 'Buat creative brief untuk kampanye baru' },
-        { icon: 'solar:wallet-linear', text: 'Rencanakan anggaran bulan depan' },
+        { icon: 'solar:document-text-linear', text: 'Buatkan PRD untuk fitur baru produk gue' },
+        { icon: 'solar:pen-new-square-linear', text: 'Tulis creative brief untuk kampanye marketing' },
+        { icon: 'solar:smartphone-linear', text: 'Rancang user flow untuk aplikasi mobile' },
       ]
     : [
-        { icon: 'solar:chart-2-linear', text: "Summarize this week's performance" },
-        { icon: 'solar:pen-new-square-linear', text: 'Draft a creative brief' },
-        { icon: 'solar:wallet-linear', text: "Plan next month's budget" },
+        { icon: 'solar:document-text-linear', text: 'Write a PRD for my new product feature' },
+        { icon: 'solar:pen-new-square-linear', text: 'Create a creative brief for a marketing campaign' },
+        { icon: 'solar:smartphone-linear', text: 'Design a user flow for a mobile app' },
       ]
 
   return (
@@ -908,9 +910,6 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
             <p className="text-xs truncate" style={{ color: '#6b7280' }}>
               {tr('dash_new_chat_in')} <span style={{ color: '#111827', fontWeight: 600 }}>{projectTitle}</span>
             </p>
-            <button onClick={onClearProject} aria-label="Clear project" className="p-1 rounded shrink-0" style={{ color: 'rgba(0,0,0,0.4)' }}>
-              <iconify-icon icon="solar:close-circle-linear" width="14" />
-            </button>
           </div>
         )}
         {atLimit && (
@@ -929,11 +928,11 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
         <textarea
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
-          onKeyDown={e => { if (!atLimit && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void handleSubmit() } }}
-          placeholder={lang === 'id' ? 'Tanyakan apapun atau @ untuk menambah konteks' : 'Ask anything or @ to add context'}
+          onKeyDown={e => { if (!atLimit && e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); void handleSubmit() } }}
+          placeholder={lang === 'id' ? 'Tanyakan sesuatu...' : 'Ask me anything...'}
           disabled={atLimit}
           className="w-full resize-none bg-transparent text-sm outline-none px-5 pt-5 pb-3 leading-relaxed text-gray-800 placeholder:text-black/30 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ minHeight: '88px' }}
+          style={{ minHeight: '68px' }}
         />
 
         {attachments.length > 0 && (
@@ -961,7 +960,7 @@ function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, proje
             style={{ borderColor: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.5)' }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-            <iconify-icon icon="solar:add-circle-linear" width="16" />
+            <iconify-icon icon="solar:folder-with-files-linear" width="16" />
           </button>
 
           <div className="flex-1" />
@@ -1065,6 +1064,7 @@ function HomeOverview({
   projectId,
   projectTitle,
   onClearProject,
+  onUpgrade,
 }: {
   conversations: LocalConversation[]
   username: string
@@ -1077,6 +1077,7 @@ function HomeOverview({
   projectId?: string | null
   projectTitle?: string | null
   onClearProject?: () => void
+  onUpgrade?: () => void
 }) {
   const { lang, t: tr } = useLanguage()
   const [filter, setFilter] = useState<'all' | 'done' | 'draft'>('all')
@@ -1117,17 +1118,16 @@ function HomeOverview({
   const cardStyle = { backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }
   const sectionStyle = { backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }
 
-  if (conversations.length === 0) {
-    return (
-      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-xl">
+  return (
+    <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-2xl">
           {/* Plan badge */}
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-              <iconify-icon icon={usage.isPro ? 'solar:crown-linear' : 'solar:lightning-bold'} width="14" style={{ color: 'rgba(0,0,0,0.5)' }} />
-              <span className="text-sm" style={{ color: 'rgba(0,0,0,0.5)' }}>{usage.isPro ? 'Pro Plan' : 'Free Plan'}</span>
+              <iconify-icon icon={usage.isPro ? 'solar:crown-bold' : 'solar:lock-keyhole-bold'} width="13" style={{ color: usage.isPro ? '#f59e0b' : 'rgba(0,0,0,0.4)' }} />
+              <span className="text-sm" style={{ color: 'rgba(0,0,0,0.55)' }}>{usage.isPro ? 'Pro Plan' : 'Starter Plan'}</span>
               {!usage.isPro && (
-                <a href="/pay?plan=pro" className="text-sm font-semibold" style={{ color: '#3b82f6' }}>Upgrade</a>
+                <button onClick={onUpgrade} className="text-sm font-semibold" style={{ color: '#3b82f6' }}>Upgrade</button>
               )}
             </div>
           </div>
@@ -1147,259 +1147,6 @@ function HomeOverview({
         </div>
       </div>
     )
-  }
-
-  return (
-    <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-8">
-      <div className="max-w-5xl mx-auto flex flex-col gap-6">
-
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#3b82f6' }}>{dateStr}</p>
-            <h1 className="text-2xl tracking-tighter mt-1" style={{ color: '#111827', fontFamily: bowlby }}>{tr(greetingKey).toUpperCase()}, {username.toUpperCase()}</h1>
-            <p className="text-sm mt-0.5" style={{ color: '#9ca3af' }}>
-              {tr('home_subtitle_count').replace('{n}', String(conversations.length))}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={onGoTemplates} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-colors"
-              style={{ borderColor: 'rgba(0,0,0,0.15)', color: '#111827', backgroundColor: '#ffffff' }}>
-              <iconify-icon icon="solar:widget-linear" width="14" />
-              {tr('home_templates_btn')}
-            </button>
-            <button onClick={onGoBriefs} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
-              style={{ backgroundColor: '#3b82f6' }}>
-              <iconify-icon icon="solar:folder-linear" width="14" />
-              {tr('home_all_briefs_btn')}
-            </button>
-          </div>
-        </div>
-
-        {/* Expiry notice — proactive + mid-session */}
-        {(sub?.expired || (sub?.expiresAt && new Date(sub.expiresAt).getTime() - now < 24 * 60 * 60 * 1000)) && (
-          <a href="/pay?expired=1" className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl text-sm font-semibold" style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.25)' }}>
-            <span>{sub?.expired ? tr('dash_expired_banner') : tr('dash_expiring_banner')}</span>
-            <span className="shrink-0">{tr('plan_limit_upgrade')}</span>
-          </a>
-        )}
-
-        {/* Prompt box */}
-        <PromptBox onSuccess={onSuccess} usage={usage} projectId={projectId} projectTitle={projectTitle} onClearProject={onClearProject} />
-
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { icon: 'solar:document-linear', color: '#fef3c7', ic: '#f97316', label: tr('home_stat_total'), value: conversations.length },
-            { icon: 'solar:check-circle-linear', color: '#dcfce7', ic: '#16a34a', label: tr('home_stat_done'), value: doneCount },
-            { icon: 'solar:hourglass-linear', color: '#dbeafe', ic: '#2563eb', label: tr('home_stat_draft'), value: draftCount },
-            { icon: 'solar:graph-new-up-linear', color: '#fce7f3', ic: '#db2777', label: tr('home_stat_week'), value: weekConversations.length },
-          ].map(s => (
-            <div key={s.label} className="rounded-2xl border p-5" style={cardStyle}>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: s.color }}>
-                  <iconify-icon icon={s.icon} width="15" style={{ color: s.ic }} />
-                </div>
-                <span className="text-sm" style={{ color: '#6b7280' }}>{s.label}</span>
-              </div>
-              <p className="text-3xl font-semibold" style={{ color: '#111827' }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Quota + Activity chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-2xl border p-6" style={cardStyle}>
-            <h2 className="text-base tracking-tight" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_quota_title')}</h2>
-            <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{plan === 'pro' ? tr('home_quota_plan_pro') : tr('home_quota_plan_starter')}</p>
-            <p className="text-3xl font-semibold mt-4" style={{ color: '#111827' }}>
-              {usage.used}<span className="text-base font-normal" style={{ color: '#9ca3af' }}> / {usage.isPro ? '∞' : usage.limit} {tr('home_quota_documents')}</span>
-            </p>
-            <div className="h-1.5 rounded-full mt-3 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
-              <div className="h-full rounded-full" style={{ backgroundColor: '#3b82f6', width: usage.isPro ? '100%' : `${Math.min(100, (usage.used / (usage.limit ?? 1)) * 100)}%` }} />
-            </div>
-            <p className="text-sm mt-4" style={{ color: '#111827' }}>
-              {usage.prototypeUsed}<span className="text-xs font-normal" style={{ color: '#9ca3af' }}> / {usage.isPro ? '∞' : usage.prototypeLimit} {tr('home_quota_prototypes')}</span>
-            </p>
-            <p className="text-sm mt-4" style={{ color: '#111827' }}>
-              {usage.chatUsed}<span className="text-xs font-normal" style={{ color: '#9ca3af' }}> / {usage.isPro ? '∞' : usage.chatLimit} {tr('home_quota_chats')}</span>
-            </p>
-            {!usage.isPro && (
-              <a href="/pay?plan=pro" className="w-full mt-4 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: '#3b82f6' }}>
-                <iconify-icon icon="solar:crown-linear" width="14" />
-                {tr('home_quota_upgrade')}
-              </a>
-            )}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t text-sm" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-              <span style={{ color: '#9ca3af' }}>{tr('home_quota_completion')}</span>
-              <span className="font-semibold" style={{ color: '#111827' }}>{conversations.length ? Math.round((doneCount / conversations.length) * 100) : 0}%</span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border p-6" style={cardStyle}>
-            <h2 className="text-base tracking-tight" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_activity_title')}</h2>
-            <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{weekConversations.length === 0 ? tr('home_activity_sub_zero') : tr('home_activity_sub').replace('{n}', String(weekConversations.length))}</p>
-            <div className="flex items-end justify-between gap-2 mt-6" style={{ height: 90 }}>
-              {dayBuckets.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                  <span className="text-[10px]" style={{ color: '#9ca3af' }}>{d.count || ''}</span>
-                  <div className="w-full rounded-md" style={{ backgroundColor: d.count ? '#3b82f6' : '#f3f4f6', height: Math.max(4, (d.count / maxDay) * 60) }} />
-                  <span className="text-[10px]" style={{ color: '#9ca3af' }}>{d.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick start */}
-        <div>
-          <h2 className="text-base tracking-tight mb-0.5" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_quickstart_title')}</h2>
-          <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>{tr('home_quickstart_sub')}</p>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {QUICK_TYPES.map(t => (
-              <button key={t.label} onClick={() => onGoType(t.type)}
-                className="flex items-start gap-3 p-4 rounded-2xl border text-left transition-all hover:-translate-y-0.5"
-                style={cardStyle}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: t.color }}>
-                  <iconify-icon icon={t.icon} width="16" style={{ color: t.iconColor }} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: '#111827' }}>{t.label}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{conversations.filter(x => x.type === t.type).length} dibuat</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent activity + Breakdown/Checklist */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 rounded-2xl border p-6" style={sectionStyle}>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div>
-                <h2 className="text-base tracking-tight" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_recent_title')}</h2>
-                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{tr('home_recent_sub').replace('{n}', String(conversations.length))}</p>
-              </div>
-              <div className="flex items-center gap-1 p-1 rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-                {([['all', 'home_filter_all'], ['done', 'home_filter_done'], ['draft', 'home_filter_draft']] as const).map(([key, labelKey]) => (
-                  <button key={key} onClick={() => setFilter(key)}
-                    className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                    style={filter === key ? { backgroundColor: '#3b82f6', color: '#ffffff' } : { color: '#6b7280' }}>
-                    {tr(labelKey)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {filteredConversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-                  <iconify-icon icon="solar:notes-linear" width="22" style={{ color: 'rgba(0,0,0,0.3)' }} />
-                </div>
-                <p className="text-sm font-medium" style={{ color: '#374151' }}>{tr('home_recent_empty_title')}</p>
-                <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>{tr('home_recent_empty_sub')}</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(0,0,0,0.06)', backgroundColor: '#ffffff' }}>
-                {filteredConversations.slice(0, 6).map(t => {
-                  const meta = TYPE_META[t.type] ?? TYPE_META.general
-                  return (
-                    <button key={t.id} onClick={() => onOpenConversation(t)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-left border-b last:border-b-0 transition-colors"
-                      style={{ borderColor: 'rgba(0,0,0,0.05)' }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color }}>
-                          <iconify-icon icon={meta.icon} width="13" style={{ color: meta.ic }} />
-                        </div>
-                        <p className="text-sm truncate" style={{ color: '#111827' }}>{t.summary}</p>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full shrink-0 ml-2" style={{
-                        backgroundColor: t.status === 'done' ? '#dcfce7' : '#f3f4f6',
-                        color: t.status === 'done' ? '#16a34a' : '#9ca3af',
-                      }}>{t.status === 'done' ? 'Done' : t.status === 'processing' ? tr('dash_status_processing') : 'Draft'}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="rounded-2xl border p-5" style={cardStyle}>
-              <h2 className="text-base tracking-tight" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_breakdown_title')}</h2>
-              <p className="text-xs mt-0.5 mb-3" style={{ color: '#9ca3af' }}>{tr('home_breakdown_sub')}</p>
-              {conversations.length === 0 ? (
-                <p className="text-xs" style={{ color: '#9ca3af' }}>{tr('home_breakdown_empty')}</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {Object.keys(TYPE_META).filter(k => k !== 'general' && conversations.some(t => t.type === k)).map(k => {
-                    const meta = TYPE_META[k]
-                    const count = conversations.filter(t => t.type === k).length
-                    return (
-                      <div key={k} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2" style={{ color: '#374151' }}>
-                          <iconify-icon icon={meta.icon} width="13" style={{ color: meta.ic }} />
-                          {meta.label}
-                        </span>
-                        <span className="font-medium" style={{ color: '#111827' }}>{count}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl border p-5" style={cardStyle}>
-              <h2 className="text-base tracking-tight" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_checklist_title')}</h2>
-              <p className="text-xs mt-0.5 mb-3" style={{ color: '#9ca3af' }}>{tr('home_checklist_done').replace('{done}', String(checklistDone)).replace('{total}', String(checklist.length))}</p>
-              <div className="flex flex-col gap-2.5">
-                {checklist.map(c => (
-                  <div key={c.key} className="flex items-center gap-2.5">
-                    <iconify-icon icon={c.done ? 'solar:check-circle-bold' : 'solar:record-circle-linear'} width="16" style={{ color: c.done ? '#16a34a' : 'rgba(0,0,0,0.2)' }} />
-                    <span className="text-xs" style={{ color: c.done ? '#111827' : '#9ca3af', textDecoration: c.done ? 'line-through' : 'none' }}>{tr(c.key)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tips */}
-        <div>
-          <h2 className="text-base tracking-tight mb-0.5" style={{ color: '#111827', fontFamily: bowlby }}>{tr('home_tips_title')}</h2>
-          <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>{tr('home_tips_sub')}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { icon: 'solar:target-linear', title: tr('home_tip_1_title'), desc: tr('home_tip_1_desc') },
-              { icon: 'solar:paperclip-linear', title: tr('home_tip_2_title'), desc: tr('home_tip_2_desc') },
-              { icon: 'solar:refresh-linear', title: tr('home_tip_3_title'), desc: tr('home_tip_3_desc') },
-            ].map(tip => (
-              <div key={tip.title} className="rounded-2xl border p-5" style={cardStyle}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(59,130,246,0.1)' }}>
-                  <iconify-icon icon={tip.icon} width="15" style={{ color: '#3b82f6' }} />
-                </div>
-                <p className="text-sm font-medium" style={{ color: '#111827' }}>{tip.title}</p>
-                <p className="text-xs mt-1.5 leading-relaxed" style={{ color: '#9ca3af' }}>{tip.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Help banner */}
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl p-6" style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>{tr('home_help_title')}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>{tr('home_help_sub')}</p>
-          </div>
-          <a href="/dashboard" onClick={e => { e.preventDefault(); onGoTemplates() }} className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: '#3b82f6' }}>
-            <iconify-icon icon="solar:question-circle-linear" width="14" />
-            {tr('home_help_cta')}
-          </a>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── Detail Drawer ──────────────────────────────────────────────────────────────
@@ -1630,11 +1377,16 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
 
   // "+ New chat" inside a project — opens the composer carrying that project.
   // The conversation is created on submit (POST requires a prompt).
-  const startChatInProject = (projectId: string) => {
+  const startChatInProject = (projectId: string, autoRename = false) => {
     setComposerProjectId(projectId)
     setChatState(null)
     setActiveNav('home')
     setCollapsedProjects(p => ({ ...p, [projectId]: false }))
+    if (autoRename) {
+      const title = groups.find(g => g.project.id === projectId)?.project.title ?? ''
+      setRenameProjectValue(title)
+      setRenamingProjectId(projectId)
+    }
     if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false)
   }
 
@@ -1665,8 +1417,8 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
           onMouseEnter={e => { if (!isActive && !menuOpen) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)' }}
           onMouseLeave={e => { if (!isActive && !menuOpen) e.currentTarget.style.backgroundColor = '' }}
         >
-          <div className="w-5 h-5 rounded shrink-0 flex items-center justify-center" style={{ backgroundColor: meta.color }}>
-            <iconify-icon icon={meta.icon} width="11" style={{ color: meta.ic }} />
+          <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+            <iconify-icon icon={meta.icon} width="15" style={{ color: 'rgba(0,0,0,0.35)' }} />
           </div>
           {isRenaming ? (
             <input
@@ -1958,7 +1710,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
         <div className="px-2 mt-3 shrink-0">
           {/* New project button */}
           <button
-            onClick={() => { setActiveNav('home'); setChatState(null); setComposerProjectId(null); if (window.innerWidth < 768) setSidebarOpen(false) }}
+            onClick={() => { setActiveNav('home'); setChatState(null); setComposerProjectId(''); if (window.innerWidth < 768) setSidebarOpen(false) }}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors text-left"
             style={activeNav === 'home' && !chatState
               ? { backgroundColor: '#3b82f6', color: '#ffffff' }
@@ -1997,7 +1749,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
 
         {/* Projects — scrollable, separated by big gap */}
         <div className="flex-1 min-h-0 flex flex-col mt-8 px-2">
-          <p className="px-3 pb-2 text-[10px] font-semibold tracking-widest uppercase shrink-0" style={{ color: '#111827' }}>{tr('dash_projects')}</p>
+          <p className="px-3 pb-2 text-xs font-semibold shrink-0" style={{ color: '#9ca3af' }}>{tr('dash_projects')}</p>
           <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
             {(() => {
               const byId = new Map(conversations.map(c => [c.id, c]))
@@ -2007,21 +1759,27 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
               if (visibleGroups.length === 0) {
                 return <p className="px-3 text-xs" style={{ color: 'rgba(0,0,0,0.2)' }}>{tr('dash_no_chats')}</p>
               }
-              return visibleGroups.map(({ g, convs }) => (
+              return visibleGroups.map(({ g, convs }, idx) => (
                 <ProjectGroup
                   key={g.project.id}
                   project={g.project}
-                  count={convs.length}
+                  colorIndex={idx}
                   collapsed={!!collapsedProjects[g.project.id]}
                   isActive={!!chatState && g.conversationIds.includes(chatState.conversationId)}
                   isRenaming={renamingProjectId === g.project.id}
                   renameValue={renameProjectValue}
                   newChatLabel={tr('dash_new_chat_in_project')}
                   renameLabel={tr('dash_rename_project')}
-                  menuOpen={contextMenuProject === g.project.id}
-                  onMenuToggle={() => setContextMenuProject(contextMenuProject === g.project.id ? null : g.project.id)}
-                  onToggle={() => setCollapsedProjects(p => ({ ...p, [g.project.id]: !p[g.project.id] }))}
-                  onNewChat={() => startChatInProject(g.project.id)}
+                  onToggle={() => {
+                    const nowCollapsed = !!collapsedProjects[g.project.id]
+                    setCollapsedProjects(p => ({ ...p, [g.project.id]: !p[g.project.id] }))
+                    if (nowCollapsed && !chatState) {
+                      // expanding and no active chat → show centered layout with project context
+                      setComposerProjectId(g.project.id)
+                      setActiveNav('home')
+                    }
+                  }}
+                  onNewChat={() => startChatInProject(g.project.id, true)}
                   onRenameStart={() => { setRenameProjectValue(g.project.title); setRenamingProjectId(g.project.id) }}
                   onRenameChange={setRenameProjectValue}
                   onRenameCommit={commitProjectRename}
@@ -2094,7 +1852,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
                 {/* Main actions */}
                 <div className="p-2">
                   {[
-                    { icon: 'solar:crown-linear', label: 'Upgrade Plan', action: () => { setShowAccountMenu(false); setActiveModal('upgrade') }, color: '#f59e0b' },
+                    { icon: 'solar:crown-linear', label: 'Upgrade Plan', action: () => { setShowAccountMenu(false); setActiveModal('upgrade') }, color: '#3b82f6' },
                     { icon: 'solar:user-circle-linear', label: 'Profile', action: () => { setShowAccountMenu(false); setActiveModal('profile') } },
                     { icon: 'solar:settings-linear', label: 'Settings', action: () => { setShowAccountMenu(false); setActiveModal('settings') } },
                   ].map(item => (
@@ -2142,158 +1900,6 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0">
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b shrink-0 gap-2" style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderColor: 'rgba(0,0,0,0.08)', backdropFilter: 'blur(8px)' }}>
-          <div className="flex items-center gap-2 min-w-0">
-            {!sidebarOpen && (
-              <button className="p-1.5 rounded-lg hover:bg-black/8 transition-colors shrink-0" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
-                <iconify-icon icon="solar:sidebar-minimalistic-linear" width="16" style={{ color: 'rgba(0,0,0,0.4)' }} />
-              </button>
-            )}
-            {chatState && activeNav !== 'settings' && activeNav !== 'help' && (
-              <div className="flex items-center gap-1 min-w-0">
-                {renamingTitle ? (
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={e => setRenameValue(e.target.value)}
-                    onBlur={commitChatRename}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') commitChatRename()
-                      if (e.key === 'Escape') setRenamingTitle(false)
-                    }}
-                    className="text-sm font-medium bg-transparent outline-none border-b min-w-0"
-                    style={{ color: 'rgba(0,0,0,0.7)', borderColor: 'rgba(0,0,0,0.25)', width: 220 }}
-                  />
-                ) : (
-                  <p className="text-sm font-medium min-w-0 truncate" style={{ color: 'rgba(0,0,0,0.6)' }}>
-                    {chatState.prompt.split(/\s+/).slice(0, 4).join(' ')}{chatState.prompt.split(/\s+/).length > 4 ? '...' : ''}
-                  </p>
-                )}
-                <div className="relative shrink-0 flex items-center">
-                  <button onClick={() => setShowChatMenu(v => !v)} className="p-1 rounded-md hover:bg-black/5 transition-colors flex items-center justify-center shrink-0" aria-label="Chat options">
-                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14" style={{ color: 'rgba(0,0,0,0.4)', display: 'block' }} />
-                  </button>
-                  {showChatMenu && (
-                    <>
-                      <div className="fixed inset-0 z-[100]" onClick={() => setShowChatMenu(false)} />
-                      <div className="absolute right-0 top-full mt-1 z-[101] w-48 rounded-xl overflow-hidden"
-                        style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 12px 24px -6px rgba(0,0,0,0.12)' }}
-                        onClick={e => e.stopPropagation()}>
-                        <div className="p-1.5">
-                          <button onClick={toggleChatPin}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                            style={{ color: '#374151' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                            <iconify-icon icon={currentConversation?.pinned ? 'solar:pin-bold' : 'solar:pin-linear'} width="15" />
-                            {currentConversation?.pinned ? 'Unpin' : 'Pin'}
-                          </button>
-                          <button onClick={toggleChatUnread}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                            style={{ color: '#374151' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                            <iconify-icon icon={currentConversation?.unread ? 'solar:eye-linear' : 'solar:eye-closed-linear'} width="15" />
-                            {currentConversation?.unread ? 'Mark as read' : 'Mark as unread'}
-                          </button>
-                          <button onClick={startChatRename}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                            style={{ color: '#374151' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                            <iconify-icon icon="solar:pen-2-linear" width="15" />
-                            Rename
-                          </button>
-                          <div className="my-1 border-t" style={{ borderColor: 'rgba(0,0,0,0.08)' }} />
-                          <button onClick={handleDeleteChat}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                            style={{ color: '#f87171' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.08)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                            <iconify-icon icon="solar:trash-bin-trash-linear" width="15" />
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <PlanBadge />
-            {chatState && activeNav !== 'settings' && activeNav !== 'help' && (<>
-              <div className="relative hidden">
-                <button onClick={() => { setShowNotifMenu(v => !v); setShowMoreMenu(false) }} className="p-2 rounded-lg hover:bg-black/5 transition-colors relative" aria-label="Notifications">
-                  <iconify-icon icon="solar:bell-linear" width="16" style={{ color: 'rgba(0,0,0,0.4)' }} />
-                  {notifications.length > 0 && (
-                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
-                  )}
-                </button>
-                {showNotifMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowNotifMenu(false)} />
-                    <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-xl overflow-hidden"
-                      style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 12px 24px -6px rgba(0,0,0,0.12)' }}
-                      onClick={e => e.stopPropagation()}>
-                      <div className="p-1.5 max-h-72 overflow-y-auto">
-                        {notifications.length === 0 ? (
-                          <p className="px-3 py-4 text-xs text-center" style={{ color: 'rgba(0,0,0,0.4)' }}>{tr('dash_no_notifications')}</p>
-                        ) : notifications.map(t => (
-                          <button key={t.id} onClick={() => openNotification(t)}
-                            className="w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                            style={{ color: '#374151' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                            <iconify-icon icon="solar:check-circle-bold" width="15" style={{ color: '#3b82f6', marginTop: 1 }} />
-                            <span className="truncate">{t.summary} {tr('dash_finished_processing')}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              <button onClick={openShareModal} className="p-2 rounded-lg hover:bg-black/5 transition-colors hidden" title="Share chat">
-                <iconify-icon icon={shareCopied ? 'solar:check-circle-linear' : 'solar:upload-linear'} width="16" style={{ color: 'rgba(0,0,0,0.4)' }} />
-              </button>
-              <div className="relative">
-                <button onClick={() => { setShowMoreMenu(v => !v); setShowNotifMenu(false) }} className="p-2 rounded-lg hover:bg-black/5 transition-colors" aria-label="More options">
-                  <iconify-icon icon="solar:menu-dots-bold" width="16" style={{ color: 'rgba(0,0,0,0.4)' }} />
-                </button>
-                {showMoreMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
-                    <div className="absolute right-0 top-full mt-1 z-50 w-52 rounded-xl overflow-hidden"
-                      style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 12px 24px -6px rgba(0,0,0,0.12)' }}
-                      onClick={e => e.stopPropagation()}>
-                      <div className="p-1.5">
-                        <button onClick={() => { setShowMoreMenu(false); setActiveNav('settings'); setChatState(null) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                          style={{ color: '#374151' }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                          <iconify-icon icon="solar:settings-linear" width="15" />
-                          Settings
-                        </button>
-                        <button onClick={() => { setShowMoreMenu(false); setActiveNav('help'); setChatState(null) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
-                          style={{ color: '#374151' }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                          <iconify-icon icon="solar:question-circle-linear" width="15" />
-                          Help
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </>)}
-          </div>
-        </div>
 
         {/* Content */}
         {chatState ? (
@@ -2320,6 +1926,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
             projectId={composerProjectId}
             projectTitle={composerProjectId ? (groups.find(g => g.project.id === composerProjectId)?.project.title ?? null) : null}
             onClearProject={() => setComposerProjectId(null)}
+            onUpgrade={() => setActiveModal('upgrade')}
           />
         ) : renderPage()}
       </main>
