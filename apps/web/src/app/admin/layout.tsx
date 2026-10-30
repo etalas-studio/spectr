@@ -8,6 +8,7 @@ import { ChevronDown, CreditCard, Eye, Home, LayoutDashboard, LogOut, PanelLeft,
 import { useAuth } from '../../hooks/useAuth'
 import { useAppTheme } from '../../components/app/useAppTheme'
 import { AdminNotifications } from './AdminNotifications'
+import { AdminSettingsDialog } from './AdminSettingsDialog'
 import { BrandMark } from '../../components/app/BrandMark'
 import { Button } from '../../components/ui/button'
 import { Toaster } from '../../components/ui/sonner'
@@ -17,8 +18,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: UsersRound },
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
-  { href: '/admin/config', label: 'Configuration', icon: Settings },
-  { href: '/admin/settings', label: 'Settings', icon: SlidersHorizontal },
+  { href: '/admin/config', label: 'Configuration', icon: SlidersHorizontal },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const pathname = usePathname()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768)
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <p className="truncate text-xs text-[var(--ap-ink-3,#5b6472)]">{state.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/admin/settings')} className="h-9"><SlidersHorizontal /> Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="h-9"><Settings /> Settings</DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" disabled={loggingOut} onClick={() => void handleLogout()} className="h-9"><LogOut /> {loggingOut ? 'Signing out…' : 'Sign out'}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -112,6 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="ap-scroll relative z-[1] min-h-0 flex-1 overflow-y-auto">{children}</div>
         </div>
       </div>
+      <AdminSettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <Toaster />
     </>
   )
