@@ -528,18 +528,20 @@ function DocsByType({ prd, quotation, prototype, specs, delay = 0 }: {
   return (
     <Card delay={delay} className="flex flex-col">
       <CardHeader icon={FileText} title="Documents by Type" right={<ChipLabel>All-time</ChipLabel>} />
-      {/* One segmented bar: each column's width follows its share of all documents. */}
-      <div className="flex flex-1 items-center gap-2">
+      {/* Equal columns that can never overflow the card; each bar fills by its share of all documents. */}
+      <div className="grid flex-1 grid-cols-2 content-center gap-x-4 gap-y-6 sm:grid-cols-4">
         {data.map(d => {
-          const share = total > 0 ? d.value / total : 1 / data.length
+          const share = total > 0 ? d.value / total : 0
           return (
-            <div key={d.name} className="min-w-[80px]" style={{ flex: `${Math.max(share, 0.08)} 1 0%` }}>
+            <div key={d.name} className="min-w-0">
               <p className="truncate text-sm text-[#111827]">{d.name}</p>
               <div className="mt-1.5 flex items-center gap-2 border-l-2 pl-2" style={{ borderColor: d.fill }}>
                 <span className="text-sm font-semibold text-[#111827]">{d.value.toLocaleString()}</span>
-                <span className="text-xs text-gray-400">{Math.round(share * (total > 0 ? 100 : 0))}%</span>
+                <span className="text-xs text-gray-400">{Math.round(share * 100)}%</span>
               </div>
-              <div className="mt-3 h-5 rounded-[6px]" style={{ background: d.fill }} />
+              <div className="mt-3 h-5 overflow-hidden rounded-[6px] bg-black/[0.05]">
+                <div className="h-full rounded-[6px]" style={{ background: d.fill, width: `${Math.max(share * 100, d.value > 0 ? 6 : 0)}%` }} />
+              </div>
             </div>
           )
         })}
