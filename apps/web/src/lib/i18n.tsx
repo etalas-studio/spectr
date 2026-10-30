@@ -68,18 +68,18 @@ const STRINGS = {
   },
   pipeline_step_1_title: { en: 'Paste brief', id: 'Paste brief' },
   pipeline_step_1_desc: {
-    en: 'Plain text, voice notes, screenshots, or documents, any format works. No special format needed.',
-    id: 'Teks biasa, voice note, screenshot, atau dokumen, semua format diterima. Tidak perlu format khusus.',
+    en: 'Plain text, voice notes, screenshots, or documents — any format works. No special format needed.',
+    id: 'Teks biasa, voice note, screenshot, atau dokumen — semua format diterima. Tidak perlu format khusus.',
   },
   pipeline_step_2_title: { en: 'Choose output', id: 'Pilih output' },
   pipeline_step_2_desc: {
-    en: 'PRD, quotation, prototype, specs, or all at once. You decide what you need.',
-    id: 'PRD, quotation, prototype, specs, atau semua sekaligus. Lo yang menentukan yang dibutuhkan.',
+    en: 'PRD, quotation, prototype, specs — or all at once. You decide what you need.',
+    id: 'PRD, quotation, prototype, specs — atau semua sekaligus. Lo yang menentukan yang dibutuhkan.',
   },
   pipeline_step_3_title: { en: 'Answer questions', id: 'Jawab pertanyaan' },
   pipeline_step_3_desc: {
-    en: 'AI asks what needs confirming, not guessing. This usually wraps up in 5-8 minutes.',
-    id: 'AI tanya hal-hal yang perlu dikonfirmasi, bukan tebak-tebakan. Proses ini biasanya selesai dalam 5-8 menit.',
+    en: 'AI asks what needs confirming — not guessing. This usually wraps up in 5-8 minutes.',
+    id: 'AI tanya hal-hal yang perlu dikonfirmasi — bukan tebak-tebakan. Proses ini biasanya selesai dalam 5-8 menit.',
   },
   pipeline_step_4_title: { en: 'Review & share', id: 'Review & bagikan' },
   pipeline_step_4_desc: {
@@ -112,7 +112,7 @@ const STRINGS = {
   pricing_best_value: { en: 'Best value', id: 'Paling worth it' },
   plan_starter_desc: { en: 'Free to start.', id: 'Gratis untuk mulai.' },
   plan_starter_cta: { en: 'Start Free', id: 'Mulai Gratis' },
-  plan_starter_f2: { en: '5 documents / month', id: '5 dokumen / bulan' },
+  plan_starter_f2: { en: '5 documents / month (PRD, quotation, specs)', id: '5 dokumen / bulan (PRD, quotation, specs)' },
   plan_starter_proto: { en: '3 prototypes / month', id: '3 prototype / bulan' },
   plan_starter_f3: { en: '100 AI chat messages / month', id: '100 pesan chat AI / bulan' },
   plan_starter_f4: { en: 'Download Markdown', id: 'Download Markdown' },
@@ -146,8 +146,8 @@ const STRINGS = {
   comparison_col_sandwich: { en: 'Spectr', id: 'Spectr' },
   comparison_col_manual: { en: 'Old way (manual)', id: 'Cara lama (manual)' },
   comparison_row_pd: { en: 'Time to write PRD', id: 'Waktu buat PRD' },
-  comparison_row_pd_s: { en: '~5 to 10 min', id: '~5 sampai 10 menit' },
-  comparison_row_pd_m: { en: '2 to 4 hours', id: '2 sampai 4 jam' },
+  comparison_row_pd_s: { en: '~5–10 min', id: '~5–10 menit' },
+  comparison_row_pd_m: { en: '2–4 hours', id: '2–4 jam' },
   comparison_row_quote: { en: 'Accurate quotation', id: 'Quotation akurat' },
   comparison_row_quote_s: { en: 'Automatic from spec', id: 'Otomatis dari spec' },
   comparison_row_quote_m: { en: 'Manual estimation', id: 'Ngira-ngira manual' },
@@ -176,8 +176,8 @@ const STRINGS = {
   deliverables_col_desc: { en: 'Description (Output-focused)', id: 'Deskripsi (Output-focused)' },
   deliverables_prd: { en: 'PRD', id: 'PRD' },
   deliverables_prd_desc: {
-    en: 'A full document ready to hand to developers, no need to re-explain.',
-    id: 'Dokumen lengkap yang langsung bisa lo kasih ke developer, tanpa perlu dijelaskan ulang.',
+    en: 'A full document ready to hand to developers — no need to re-explain.',
+    id: 'Dokumen lengkap yang langsung bisa lo kasih ke developer — tanpa perlu dijelaskan ulang.',
   },
   deliverables_proto: { en: 'Prototype', id: 'Prototype' },
   deliverables_proto_desc: {
@@ -186,13 +186,13 @@ const STRINGS = {
   },
   deliverables_quotation: { en: 'Quotation', id: 'Quotation' },
   deliverables_quotation_desc: {
-    en: 'A client-ready estimate, includes assumptions, per-item pricing, and payment terms.',
-    id: 'RAB siap kirim, sudah include asumsi, harga per item, dan terms pembayaran.',
+    en: 'A client-ready estimate — includes assumptions, per-item pricing, and payment terms.',
+    id: 'RAB siap kirim — sudah include asumsi, harga per item, dan terms pembayaran.',
   },
   deliverables_specs: { en: 'Specs', id: 'Specs' },
   deliverables_specs_desc: {
-    en: 'A technical checklist per feature, the team reference so nothing is missed or mismatched.',
-    id: 'Checklist teknis per fitur, jadi patokan tim supaya ga ada yang missed atau mismatch.',
+    en: 'A technical checklist per feature — the team reference so nothing is missed or mismatched.',
+    id: 'Checklist teknis per fitur — jadi patokan tim supaya ga ada yang missed atau mismatch.',
   },
 
   // ── Differentiators ──

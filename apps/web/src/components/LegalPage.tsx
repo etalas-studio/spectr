@@ -5,7 +5,7 @@ import { useLanguage } from '../lib/i18n'
 import { LandingNav } from './landing/LandingNav'
 import { FooterBlog } from './landing/FooterBlog'
 
-const interTight = "'Plus Jakarta Sans', sans-serif"
+const interTight = "'Inter Tight', 'Inter', sans-serif"
 
 export interface LegalSection {
   heading: { en: string; id: string }

@@ -23,11 +23,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: "if(!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('sp-motion');try{if(!sessionStorage.getItem('spBoot')&&location.pathname==='/')document.documentElement.classList.add('sp-boot')}catch(e){}}",
-          }}
-        />
       </head>
       <body>
         <Script

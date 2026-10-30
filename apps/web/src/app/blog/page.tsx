@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function BlogIndexPage() {
   const posts = await getAllPosts()
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white relative overflow-hidden" style={{ fontFamily: "'Inter Tight', 'Inter', sans-serif" }}>
       <GridLines />
       <LandingNav />
       <main className="max-w-6xl mx-auto px-6 pt-24 pb-12 relative z-10">
