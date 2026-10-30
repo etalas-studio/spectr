@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '../lib/i18n'
-import { postVerifyEmail } from '../api/auth'
+import { postVerifyEmail, fetchMe } from '../api/auth'
 
 const bowlby = "'Bowlby One', system-ui"
 
@@ -18,12 +18,20 @@ export default function VerifyEmailPage() {
       return
     }
     postVerifyEmail(token)
-      .then(() => setState('success'))
+      .then(async () => {
+        setState('success')
+        // Try auto login — if session was set by backend, redirect straight to dashboard
+        try {
+          const me = await fetchMe()
+          if (me.status === 'authenticated') { router.replace('/dashboard'); return }
+        } catch { /* no session, fall through to manual login */ }
+        setTimeout(() => router.push('/login'), 2500)
+      })
       .catch(() => setState('error'))
   }, [token])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center antialiased px-4 py-10" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#F4EBE1' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center antialiased px-4 py-10" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", backgroundColor: '#F4EBE1' }}>
       <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ backgroundColor: '#ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.08)' }}>
         <h1 className="text-2xl tracking-tight mb-4" style={{ fontFamily: bowlby, color: '#111827' }}>{tr('verify_title')}</h1>
         {state === 'loading' && <p className="text-sm text-zinc-500">Loading…</p>}

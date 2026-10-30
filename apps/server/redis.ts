@@ -19,6 +19,21 @@ function sub(): Redis | null {
   return _sub;
 }
 
+/** Whether a shared Redis is configured (otherwise pub/sub runs in-process). */
+export function redisConfigured(): boolean {
+  return Boolean(url);
+}
+
+/** Round-trip PING against the shared Redis; throws if unreachable. */
+export async function pingRedis(): Promise<number> {
+  const client = pub();
+  if (!client) throw new Error("REDIS_URL not set");
+  const start = Date.now();
+  const reply = await client.ping();
+  if (reply !== "PONG") throw new Error(`unexpected reply: ${reply}`);
+  return Date.now() - start;
+}
+
 // One source of truth for "how long can a generation run own its locks". The
 // prototype engine's own timeout is 10 min; this must exceed it plus margin so
 // the marker/lease never expires mid-run and admits a second generation.

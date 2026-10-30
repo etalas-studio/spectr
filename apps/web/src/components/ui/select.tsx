@@ -61,7 +61,7 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            "z-50 max-h-[var(--available-height)] min-w-[var(--anchor-width)] origin-[var(--transform-origin)] overflow-y-auto rounded-lg bg-[#111113] p-1 text-white shadow-md ring-1 ring-white/10 outline-none",
+            "z-50 max-h-[var(--available-height)] min-w-[var(--anchor-width)] origin-[var(--transform-origin)] overflow-y-auto rounded-[12px] bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
             className
           )}
           {...props}
@@ -80,7 +80,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default select-none items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-xs outline-none data-highlighted:bg-white/10 data-selected:font-medium",
+        "relative flex w-full cursor-default select-none items-center gap-2 rounded-lg py-1.5 pr-8 pl-2 text-xs outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-selected:font-medium",
         className
       )}
       {...props}

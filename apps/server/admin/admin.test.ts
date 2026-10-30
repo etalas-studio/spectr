@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
+import { scoreChecks } from "./health.js";
 
 // We test the route handlers indirectly by testing the DB query functions
 // and input validation logic (the routes themselves are thin wrappers).
@@ -48,5 +49,17 @@ describe("admin route input validation", () => {
     assert.equal(parseLimit(undefined), 50);
     assert.equal(parseLimit("200"), 100);
     assert.equal(parseLimit("20"), 20);
+  });
+});
+
+describe("scoreChecks", () => {
+  it("all ok is 100 / ok", () => {
+    assert.deepEqual(scoreChecks([{ status: "ok" }, { status: "ok" }]), { score: 100, status: "ok" });
+  });
+
+  it("degraded counts half and down dominates the status", () => {
+    assert.deepEqual(scoreChecks([{ status: "ok" }, { status: "degraded" }]), { score: 75, status: "degraded" });
+    assert.deepEqual(scoreChecks([{ status: "ok" }, { status: "down" }]), { score: 50, status: "down" });
+    assert.deepEqual(scoreChecks([]), { score: 0, status: "down" });
   });
 });

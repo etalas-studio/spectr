@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useLanguage } from '../lib/i18n'
 import { postForgotPassword } from '../api/auth'
 
-const interTight = "'Inter Tight', 'Inter', sans-serif"
+const interTight = "'Plus Jakarta Sans', sans-serif"
 
 export default function ForgotPasswordForm({ onBack, modal }: { onBack?: () => void; modal?: boolean }) {
   const { t: tr } = useLanguage()

@@ -249,6 +249,10 @@ const STRINGS = {
   dash_upgrade_pro: { en: 'Upgrade to PRO', id: 'Upgrade ke PRO' },
   dash_no_notifications: { en: 'No new notifications', id: 'Tidak ada notifikasi baru' },
   dash_finished_processing: { en: 'finished processing', id: 'selesai diproses' },
+  dash_notifications: { en: 'Notifications', id: 'Notifikasi' },
+  dash_mark_all_read: { en: 'Mark all as read', id: 'Tandai semua dibaca' },
+  dash_notif_ready: { en: 'is ready', id: 'sudah siap' },
+  dash_notif_open: { en: 'Open', id: 'Buka' },
   dash_no_docs: { en: 'No documents yet', id: 'Belum ada dokumen' },
   dash_no_docs_sub: { en: 'Create your first one from the form above', id: 'Buat yang pertama dari form di atas' },
   dash_create_brief: { en: 'Create Brief', id: 'Buat Brief' },
@@ -341,6 +345,7 @@ const STRINGS = {
   setup_username_label: { en: 'Username', id: 'Username' },
   setup_email_label: { en: 'Email', id: 'Email' },
   setup_password_label: { en: 'Password', id: 'Password' },
+  setup_password_min: { en: 'Password must be at least 8 characters', id: 'Password minimal 8 karakter' },
   setup_cta: { en: 'Create account', id: 'Buat akun' },
   setup_pending: { en: 'Creating account…', id: 'Membuat akun...' },
 
@@ -471,12 +476,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (isAuthed) void setPreference('lang', next).catch(() => {})
   }
 
-  // Sync from the server for authenticated users (localStorage is the instant cache).
+  // Sync from the server for authenticated users — server is source of truth.
+  // If server has no preference stored, default to 'en' regardless of localStorage.
   useEffect(() => {
     if (!isAuthed) return
     void getPreference('lang')
       .then((value) => {
-        if (value === 'en' || value === 'id') setLangState(value)
+        if (value === 'en' || value === 'id') {
+          setLangState(value)
+        } else {
+          // No server preference — enforce 'en' and clear any stale localStorage value
+          setLangState('en')
+          try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
+        }
       })
       .catch(() => {})
   }, [isAuthed])

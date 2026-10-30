@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../../hooks/useAuth'
-import {
-  Select, Button, Text, Badge, TextField,
-  IconButton, Flex, Box, Card, Callout, Tabs,
-} from '@radix-ui/themes'
+import { Activity, ChevronDownIcon, Eye, EyeOff, FlaskConical, Cpu, Plug, PlugZap, Server, Save } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectIcon, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   fetchAdminEngine,
   updateAdminEngine,
@@ -24,36 +27,16 @@ const STAGE_LABELS: Record<string, string> = {
   vision: 'Vision (attachment & screenshot)',
 }
 
-function omitKey<K extends string, V>(rec: Record<K, V>, key: string): Record<K, V> {
-  const { [key as K]: _dropped, ...rest } = rec
-  return rest as Record<K, V>
-}
-
-function SectionMsg({ kind, text, onDismiss }: { kind: 'error' | 'notice'; text: string; onDismiss: () => void }) {
-  return (
-    <Callout.Root color={kind === 'error' ? 'red' : 'green'} size="1">
-      <Callout.Text>
-        <Flex justify="between" align="center" gap="3">
-          <span>{text}</span>
-          <IconButton size="1" variant="ghost" color="gray" onClick={onDismiss}>✕</IconButton>
-        </Flex>
-      </Callout.Text>
-    </Callout.Root>
-  )
-}
-
 function ProviderCard({
-  integration, form, msg, busy, showKey,
-  onToggleKey, onDismissMsg, onFormChange,
+  integration, form, busy, showKey,
+  onToggleKey, onFormChange,
   onConnect, onTest, onPing, onDisconnect,
 }: {
   integration: IntegrationStatus
   form: { apiKey: string; baseUrl: string }
-  msg?: { kind: 'error' | 'notice'; text: string }
   busy: boolean
   showKey: boolean
   onToggleKey: () => void
-  onDismissMsg: () => void
   onFormChange: (patch: { apiKey?: string; baseUrl?: string }) => void
   onConnect: () => void
   onTest: () => void
@@ -61,41 +44,38 @@ function ProviderCard({
   onDisconnect: () => void
 }) {
   return (
-    <Card>
-      <Flex justify="between" align="center" mb="3">
-        <Flex align="center" gap="2">
-          <Text size="2" weight="medium">{integration.name}</Text>
-          <Badge color={integration.connected ? 'green' : 'gray'} variant="soft" radius="full">
+    <div className="rounded-2xl border border-black/[0.08] bg-white p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-[#111827]">{integration.name}</span>
+          <Badge tone={integration.connected ? 'green' : 'gray'}>
             {integration.connected ? 'connected' : 'disconnected'}
           </Badge>
-        </Flex>
-        <Text size="1" color="gray">{integration.models.length} model{integration.models.length !== 1 ? 's' : ''}</Text>
-      </Flex>
+        </div>
+        <span className="text-xs text-gray-500">{integration.models.length} model{integration.models.length !== 1 ? 's' : ''}</span>
+      </div>
 
-      {msg && <Box mb="3"><SectionMsg kind={msg.kind} text={msg.text} onDismiss={onDismissMsg} /></Box>}
       {integration.error && !integration.connected && (
-        <Text size="1" color="orange" mb="3" as="p">{integration.error}</Text>
+        <p className="mb-3 text-xs text-orange-500">{integration.error}</p>
       )}
 
-      <Flex direction="column" gap="2">
-        <Box style={{ position: 'relative' }}>
-          <TextField.Root
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Input
             type={showKey ? 'text' : 'password'}
             placeholder="API key"
             autoComplete="off"
             value={form.apiKey}
             onChange={(e) => onFormChange({ apiKey: e.target.value })}
-          >
-            <TextField.Slot side="right">
-              <IconButton size="1" variant="ghost" color="gray" onClick={onToggleKey} type="button" tabIndex={-1}>
-                <iconify-icon icon={showKey ? 'solar:eye-closed-linear' : 'solar:eye-linear'} width="14" />
-              </IconButton>
-            </TextField.Slot>
-          </TextField.Root>
-        </Box>
+            className="pr-10"
+          />
+          <Button variant="ghost" size="icon-xs" type="button" tabIndex={-1} onClick={onToggleKey} aria-label={showKey ? 'Hide API key' : 'Show API key'} className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-400">
+            {showKey ? <EyeOff /> : <Eye />}
+          </Button>
+        </div>
 
         {integration.id === '9router' && (
-          <TextField.Root
+          <Input
             type="text"
             placeholder="Base URL (https://…/v1)"
             value={form.baseUrl}
@@ -103,18 +83,18 @@ function ProviderCard({
           />
         )}
 
-        <Flex wrap="wrap" gap="2" mt="1">
-          <Button size="1" onClick={onConnect} disabled={busy || !form.apiKey.trim()}>Connect & save</Button>
-          <Button size="1" variant="soft" onClick={onTest} disabled={busy || !form.apiKey.trim()}>Test (no save)</Button>
+        <div className="mt-1 flex flex-wrap gap-2">
+          <Button variant="primary" className="h-10 gap-2 px-4 font-semibold" onClick={onConnect} disabled={busy || !form.apiKey.trim()}><PlugZap /> Connect & save</Button>
+          <Button variant="secondary" className="h-10 gap-2 bg-black/[0.06] px-4 font-semibold" onClick={onTest} disabled={busy || !form.apiKey.trim()}><FlaskConical /> Test (no save)</Button>
           {integration.connected && (
             <>
-              <Button size="1" variant="soft" onClick={onPing} disabled={busy}>Ping</Button>
-              <Button size="1" variant="soft" color="red" onClick={onDisconnect} disabled={busy}>Disconnect</Button>
+              <Button variant="secondary" className="h-10 gap-2 bg-black/[0.06] px-4 font-semibold" onClick={onPing} disabled={busy}><Activity /> Ping</Button>
+              <Button variant="destructive" className="h-10 gap-2 px-4 font-semibold" onClick={onDisconnect} disabled={busy}><Plug /> Disconnect</Button>
             </>
           )}
-        </Flex>
-      </Flex>
-    </Card>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -126,10 +106,6 @@ export default function ConfigPage() {
   const [showKey, setShowKey] = useState<Record<string, boolean>>({})
   const toggleKey = useCallback((id: string) => setShowKey(p => ({ ...p, [id]: !p[id] })), [])
   const [busy, setBusy] = useState(false)
-  const [msgs, setMsgs] = useState<Record<string, { kind: 'error' | 'notice'; text: string }>>({})
-  const setMsg = useCallback((section: string, kind: 'error' | 'notice', text: string) => {
-    setMsgs(p => ({ ...p, [section]: { kind, text } }))
-  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -142,95 +118,95 @@ export default function ConfigPage() {
       for (const i of data.integrations) forms[i.id] = { apiKey: i.apiKey ?? '', baseUrl: i.baseUrl ?? '' }
       setFormState(forms)
     } catch (err) {
-      setMsg('engine', 'error', err instanceof Error ? err.message : 'Failed to load config')
+      toast.error(err instanceof Error ? err.message : 'Failed to load config')
     }
-  }, [setMsg])
+  }, [])
 
   useEffect(() => { if (state.status === 'authenticated') void load() }, [state.status, load])
 
   const models = (config?.integrations ?? []).filter(i => i.connected).flatMap(i => i.models)
 
-  const run = async (section: string, fn: () => Promise<unknown>, okMsg?: string) => {
+  const run = async (fn: () => Promise<unknown>, okMsg?: string) => {
     setBusy(true)
     try {
       const result = await fn()
       await load()
       const text = okMsg ?? (typeof result === 'string' ? result : undefined)
-      if (text) setMsg(section, 'notice', text)
+      if (text) toast.success(text)
     } catch (err) {
-      setMsg(section, 'error', err instanceof Error ? err.message : 'Request failed')
+      toast.error(err instanceof Error ? err.message : 'Request failed')
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <header className="shrink-0 px-10 pt-10 pb-6" style={{ backgroundColor: '#f8fafc' }}>
-        <h1 className="text-3xl font-semibold tracking-tight" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Configuration</h1>
-        <p className="mt-1.5 text-sm" style={{ color: 'rgba(0,0,0,0.45)' }}>AI engine and provider settings. Changes apply immediately.</p>
+    <div className="flex h-full flex-col">
+      <header className="shrink-0 px-6 pt-2 pb-5">
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Configuration</h1>
+        <p className="mt-1.5 text-sm text-black/45">AI engine and provider settings. Changes apply immediately.</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-10 pb-10">
-        <Tabs.Root defaultValue="providers">
-          <Tabs.List mb="5">
-            <Tabs.Trigger value="providers">Providers</Tabs.Trigger>
-            <Tabs.Trigger value="engine">Engine</Tabs.Trigger>
-          </Tabs.List>
+        <Tabs defaultValue="providers" className="gap-5">
+          <TabsList>
+            <TabsTrigger value="providers"><Server /> Providers</TabsTrigger>
+            <TabsTrigger value="engine"><Cpu /> Engine</TabsTrigger>
+          </TabsList>
 
-          <Tabs.Content value="providers">
-            <Flex direction="column" gap="3">
+          <TabsContent value="providers">
+            <div className="flex flex-col gap-3">
               {(config?.integrations ?? []).map((integration) => (
                 <ProviderCard
                   key={integration.id}
                   integration={integration}
                   form={formState[integration.id] ?? { apiKey: '', baseUrl: '' }}
-                  msg={msgs[`integ:${integration.id}`]}
                   busy={busy}
                   showKey={!!showKey[integration.id]}
                   onToggleKey={() => toggleKey(integration.id)}
-                  onDismissMsg={() => setMsgs(p => omitKey(p, `integ:${integration.id}`))}
                   onFormChange={(patch) => setFormState(p => ({ ...p, [integration.id]: { ...(p[integration.id] ?? { apiKey: '', baseUrl: '' }), ...patch } }))}
-                  onConnect={() => run(`integ:${integration.id}`, () => connectProvider(integration.id, formState[integration.id]?.apiKey ?? '', formState[integration.id]?.baseUrl || undefined), 'Connected')}
-                  onTest={() => run(`integ:${integration.id}`, () => testProvider(integration.id, formState[integration.id]?.apiKey ?? '', formState[integration.id]?.baseUrl || undefined))}
-                  onPing={() => run(`integ:${integration.id}`, async () => { const r = await pingProvider(integration.id); if (!r.ok) throw new Error(r.message || 'Ping failed'); return r.message })}
-                  onDisconnect={() => run(`integ:${integration.id}`, () => disconnectProvider(integration.id))}
+                  onConnect={() => run(() => connectProvider(integration.id, formState[integration.id]?.apiKey ?? '', formState[integration.id]?.baseUrl || undefined), 'Connected')}
+                  onTest={() => run(() => testProvider(integration.id, formState[integration.id]?.apiKey ?? '', formState[integration.id]?.baseUrl || undefined))}
+                  onPing={() => run(async () => { const r = await pingProvider(integration.id); if (!r.ok) throw new Error(r.message || 'Ping failed'); return r.message })}
+                  onDisconnect={() => run(() => disconnectProvider(integration.id))}
                 />
               ))}
-            </Flex>
-          </Tabs.Content>
+            </div>
+          </TabsContent>
 
-          <Tabs.Content value="engine">
-            <Card>
-              {msgs['engine'] && <Box mb="3"><SectionMsg kind={msgs['engine']!.kind} text={msgs['engine']!.text} onDismiss={() => setMsgs(p => omitKey(p, 'engine'))} /></Box>}
-              <Flex direction="column" gap="3">
+          <TabsContent value="engine">
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-6">
+              <div className="flex flex-col gap-4">
                 {Object.entries(STAGE_LABELS).map(([stage, label]) => (
-                  <Flex key={stage} align="center" gap="4">
-                    <Box style={{ minWidth: 220 }}>
-                      <Text as="div" size="2" weight="medium">{label}</Text>
-                      <Text as="div" size="1" color="gray">{stage}</Text>
-                    </Box>
-                    <Select.Root
+                  <div key={stage} className="flex flex-wrap items-center gap-4">
+                    <div className="min-w-[220px]">
+                      <div className="text-sm font-medium text-[#111827]">{label}</div>
+                      <div className="text-xs text-gray-500">{stage}</div>
+                    </div>
+                    <Select
                       value={stageValues[stage] ?? ''}
-                      onValueChange={(v) => { if (v) setStageValues(p => ({ ...p, [stage]: v })) }}
+                      onValueChange={(v) => { if (v) setStageValues(p => ({ ...p, [stage]: v as string })) }}
                       disabled={models.length === 0}
                     >
-                      <Select.Trigger placeholder={models.length === 0 ? 'Connect a provider first' : 'Select model'} style={{ flex: 1 }} />
-                      <Select.Content>
-                        {models.map(m => <Select.Item key={m.id} value={m.id}>{m.id}</Select.Item>)}
-                      </Select.Content>
-                    </Select.Root>
-                  </Flex>
+                      <SelectTrigger className="h-10 min-w-[220px] flex-1 justify-between rounded-xl border border-input bg-muted/60 px-3.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 data-disabled:cursor-not-allowed data-disabled:opacity-60" aria-label={label}>
+                        <SelectValue>{(v) => (v ? (v as string) : models.length === 0 ? 'Connect a provider first' : 'Select model')}</SelectValue>
+                        <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {models.map(m => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 ))}
-              </Flex>
-              <Box mt="4">
-                <Button onClick={() => run('engine', () => updateAdminEngine(stageValues))} disabled={busy || models.length === 0}>
-                  {busy ? 'Saving…' : 'Save engine config'}
+              </div>
+              <div className="mt-5">
+                <Button variant="primary" className="h-10 gap-2 px-4 font-semibold" onClick={() => run(() => updateAdminEngine(stageValues), 'Engine config saved')} disabled={busy || models.length === 0}>
+                  <Save /> {busy ? 'Saving…' : 'Save engine config'}
                 </Button>
-              </Box>
-            </Card>
-          </Tabs.Content>
-        </Tabs.Root>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

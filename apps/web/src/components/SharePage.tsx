@@ -14,7 +14,7 @@ interface SharedData {
   attachments: Array<{ id: string; filename: string; url: string; mimeType: string }>
 }
 
-const inter = "'Inter', sans-serif"
+const inter = "'Plus Jakarta Sans', sans-serif"
 
 export default function SharePage({ token }: { token: string }) {
   const [data, setData] = useState<SharedData | null>(null)

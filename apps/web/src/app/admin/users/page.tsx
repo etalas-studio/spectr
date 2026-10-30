@@ -1,10 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  Table, TextField, Select, Button, Text, Badge,
-  Dialog, AlertDialog, IconButton, Flex, Box,
-} from '@radix-ui/themes'
+import { Pencil, Save, Search, Trash2, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectIcon, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { ChevronDownIcon } from 'lucide-react'
 import {
   fetchAdminUsers,
   manageUserSubscription,
@@ -14,11 +20,17 @@ import {
   type AdminUsersResponse,
 } from '../../../api/admin'
 
-function planColor(slug: string | undefined): 'green' | 'blue' | 'gray' {
+const fieldTrigger = 'h-10 w-full justify-between rounded-xl border border-input bg-muted/60 px-3.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30'
+const labelCls = 'mb-1.5 block text-xs font-medium text-gray-500'
+
+function planTone(slug: string | undefined): 'green' | 'blue' | 'gray' {
   if (slug === 'pro') return 'green'
   if (slug === 'starter') return 'blue'
   return 'gray'
 }
+
+const ROLE_LABEL: Record<string, string> = { '': 'All roles', user: 'User', admin: 'Admin' }
+const PLAN_LABEL: Record<string, string> = { '': 'No plan', starter: 'Starter', pro: 'Pro' }
 
 function formatExpiry(iso: string | null): string {
   if (!iso) return '—'
@@ -56,61 +68,56 @@ function EditModal({
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <Dialog.Content maxWidth="400px">
-        <Flex justify="between" align="start">
-          <Box>
-            <Dialog.Title mb="1">Edit user</Dialog.Title>
-            <Dialog.Description size="2" color="gray">Update role and plan for this account.</Dialog.Description>
-          </Box>
-          <Dialog.Close>
-            <IconButton size="1" variant="ghost" color="gray" aria-label="Close">
-              <iconify-icon icon="solar:close-linear" width="18" />
-            </IconButton>
-          </Dialog.Close>
-        </Flex>
-        <Flex direction="column" gap="3" mt="3">
-          <Box>
-            <Text as="label" size="1" color="gray">Email</Text>
-            <TextField.Root value={user.email} readOnly mt="1" style={{ opacity: 0.5, cursor: 'not-allowed' }} />
-          </Box>
-          <Box>
-            <Text as="label" size="1" color="gray">Username</Text>
-            <TextField.Root value={user.username} readOnly mt="1" style={{ opacity: 0.5, cursor: 'not-allowed' }} />
-          </Box>
-          <Box>
-            <Text as="label" size="1" color="gray">Role</Text>
-            <Select.Root value={role} onValueChange={(v) => setRole(v as 'user' | 'admin')}>
-              <Select.Trigger mt="1" style={{ width: '100%' }} />
-              <Select.Content>
-                <Select.Item value="user">user</Select.Item>
-                <Select.Item value="admin">admin</Select.Item>
-              </Select.Content>
-            </Select.Root>
-          </Box>
-          <Box>
-            <Text as="label" size="1" color="gray">Plan</Text>
-            <Select.Root value={plan} onValueChange={(v) => setPlan(v as 'pro' | 'starter' | '')}>
-              <Select.Trigger mt="1" placeholder="No plan" style={{ width: '100%' }} />
-              <Select.Content>
-                <Select.Item value="">No plan</Select.Item>
-                <Select.Item value="starter">Starter</Select.Item>
-                <Select.Item value="pro">Pro</Select.Item>
-              </Select.Content>
-            </Select.Root>
-          </Box>
-          {err && <Text size="1" color="red">{err}</Text>}
-        </Flex>
-        <Flex gap="2" justify="end" mt="4">
-          <Dialog.Close>
-            <Button variant="soft" color="gray">Cancel</Button>
-          </Dialog.Close>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="gap-0 rounded-2xl p-6 sm:max-w-[400px]">
+        <DialogTitle className="text-lg leading-7 font-semibold tracking-tight">Edit user</DialogTitle>
+        <DialogDescription className="mt-0.5 text-sm text-gray-500">Update role and plan for this account.</DialogDescription>
+        <div className="mt-5 flex flex-col gap-4">
+          <div>
+            <Label className={labelCls}>Email</Label>
+            <Input value={user.email} readOnly className="cursor-not-allowed opacity-50" />
+          </div>
+          <div>
+            <Label className={labelCls}>Username</Label>
+            <Input value={user.username} readOnly className="cursor-not-allowed opacity-50" />
+          </div>
+          <div>
+            <Label className={labelCls}>Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as 'user' | 'admin')}>
+              <SelectTrigger className={fieldTrigger} aria-label="Role">
+                <SelectValue />
+                <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">user</SelectItem>
+                <SelectItem value="admin">admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className={labelCls}>Plan</Label>
+            <Select value={plan} onValueChange={(v) => setPlan((v ?? '') as 'pro' | 'starter' | '')}>
+              <SelectTrigger className={fieldTrigger} aria-label="Plan">
+                <SelectValue>{(v) => PLAN_LABEL[(v as string) ?? ''] ?? 'No plan'}</SelectValue>
+                <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No plan</SelectItem>
+                <SelectItem value="starter">Starter</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {err && <p className="text-xs text-red-500">{err}</p>}
+        </div>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Button variant="secondary" className="h-10 gap-2 rounded-[12px] px-4 bg-black/[0.06] font-semibold text-gray-700 hover:bg-black/[0.1]" onClick={onClose}><X /> Cancel</Button>
+          <Button variant="primary" className="h-10 gap-2 px-4 font-semibold" onClick={handleSave} disabled={saving}>
+            <Save /> {saving ? 'Saving…' : 'Save'}
           </Button>
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -126,34 +133,21 @@ function DeleteModal({
 }) {
   if (!user) return null
   return (
-    <AlertDialog.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <AlertDialog.Content maxWidth="400px">
-        <Flex justify="between" align="start">
-          <Box>
-            <AlertDialog.Title mb="1">Delete user</AlertDialog.Title>
-            <AlertDialog.Description size="2" color="gray">This action is irreversible and cannot be recovered.</AlertDialog.Description>
-          </Box>
-          <AlertDialog.Cancel>
-            <IconButton size="1" variant="ghost" color="gray" aria-label="Close">
-              <iconify-icon icon="solar:close-linear" width="18" />
-            </IconButton>
-          </AlertDialog.Cancel>
-        </Flex>
-        <Text size="2" mt="3" as="p">
-          This permanently deletes <strong>{user.email}</strong> and all their data.
-        </Text>
-        <Flex gap="2" justify="end" mt="4">
-          <AlertDialog.Cancel>
-            <Button variant="soft" color="gray">Cancel</Button>
-          </AlertDialog.Cancel>
-          <AlertDialog.Action>
-            <Button color="red" disabled={busy} onClick={() => onConfirm(user)}>
-              {busy ? 'Deleting…' : 'Delete permanently'}
-            </Button>
-          </AlertDialog.Action>
-        </Flex>
-      </AlertDialog.Content>
-    </AlertDialog.Root>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="gap-0 rounded-2xl p-6 sm:max-w-[420px]">
+        <span className="flex size-10 items-center justify-center rounded-full bg-red-100 text-red-500"><Trash2 className="size-[18px]" /></span>
+        <DialogTitle className="mt-4 text-lg leading-7 font-semibold tracking-tight">Delete user</DialogTitle>
+        <DialogDescription className="mt-1 text-sm leading-5 text-gray-500">
+          This permanently deletes <strong className="font-semibold text-gray-700">{user.email}</strong> and all their data. This action is irreversible and cannot be recovered.
+        </DialogDescription>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Button variant="secondary" className="h-10 gap-2 rounded-[12px] px-4 bg-black/[0.06] font-semibold text-gray-700 hover:bg-black/[0.1]" onClick={onClose}><X /> Cancel</Button>
+          <Button className="h-10 gap-2 rounded-[12px] px-4 bg-[#dc2626] font-semibold text-white hover:bg-[#b91c1c]" disabled={busy} onClick={() => onConfirm(user)}>
+            <Trash2 /> {busy ? 'Deleting…' : 'Delete permanently'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -165,7 +159,6 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [actionMsg, setActionMsg] = useState<{ kind: 'error' | 'notice'; text: string } | null>(null)
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
   const LIMIT = 50
@@ -189,9 +182,9 @@ export default function UsersPage() {
   }
 
   const run = async (fn: () => Promise<unknown>, okMsg: string) => {
-    setBusy(true); setActionMsg(null)
-    try { await fn(); setActionMsg({ kind: 'notice', text: okMsg }); await load(page, search, roleFilter) }
-    catch (err) { setActionMsg({ kind: 'error', text: err instanceof Error ? err.message : 'Action failed' }) }
+    setBusy(true)
+    try { await fn(); toast.success(okMsg); await load(page, search, roleFilter) }
+    catch (err) { toast.error(err instanceof Error ? err.message : 'Action failed') }
     finally { setBusy(false) }
   }
 
@@ -205,7 +198,7 @@ export default function UsersPage() {
     }
     await Promise.all(ops)
     await load(page, search, roleFilter)
-    setActionMsg({ kind: 'notice', text: `Saved ${user.email}` })
+    toast.success(`Saved ${user.email}`)
   }
 
   const deleteUser = (user: AdminUser) => {
@@ -215,108 +208,96 @@ export default function UsersPage() {
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 1
 
   return (
-    <div className="flex flex-col h-full">
-      <header className="shrink-0 px-10 pt-10 pb-6" style={{ backgroundColor: '#f8fafc' }}>
-        <h1 className="text-3xl font-semibold tracking-tight" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Users</h1>
-        <p className="mt-1.5 text-sm" style={{ color: 'rgba(0,0,0,0.45)' }}>All accounts, roles, and subscriptions.</p>
+    <div className="flex h-full flex-col">
+      <header className="shrink-0 px-6 pt-2 pb-5">
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Users</h1>
+        <p className="mt-1.5 text-sm text-black/45">All accounts, roles, and subscriptions.</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-10 pb-10">
-        {error && <Text size="2" color="red">{error}</Text>}
+        {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
 
-        <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-6">
+        <div className="space-y-5 rounded-2xl border border-black/[0.08] bg-white p-6">
           {/* Toolbar */}
-          <Flex wrap="wrap" gap="3" align="center">
-            <TextField.Root
-              placeholder="Search email or username…"
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              style={{ width: 260 }}
-            />
-            <Select.Root value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1) }}>
-              <Select.Trigger placeholder="All roles" />
-              <Select.Content>
-                <Select.Item value="">All roles</Select.Item>
-                <Select.Item value="user">User</Select.Item>
-                <Select.Item value="admin">Admin</Select.Item>
-              </Select.Content>
-            </Select.Root>
-            {actionMsg && (
-              <Flex align="center" gap="2" ml="auto">
-                <Text size="1" color={actionMsg.kind === 'error' ? 'red' : 'green'}>{actionMsg.text}</Text>
-                <IconButton size="1" variant="ghost" color="gray" onClick={() => setActionMsg(null)}>✕</IconButton>
-              </Flex>
-            )}
-          </Flex>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-[260px]">
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Search email or username…"
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v ?? ''); setPage(1) }}>
+              <SelectTrigger className={`${fieldTrigger} w-40`} aria-label="Filter by role">
+                <SelectValue>{(v) => ROLE_LABEL[(v as string) ?? ''] ?? 'All roles'}</SelectValue>
+                <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All roles</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Table */}
           {!data ? (
-            <Text size="2" color="gray">Loading…</Text>
+            <p className="text-sm text-gray-500">Loading…</p>
           ) : (
-            <Table.Root variant="surface" size="2">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>Email</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Username</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Role</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Plan</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Expires</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Email</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.users.length === 0 ? (
-                  <Table.Row>
-                    <Table.Cell colSpan={5}>
-                      <Text size="2" color="gray">No users found.</Text>
-                    </Table.Cell>
-                  </Table.Row>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-gray-500">No users found.</TableCell>
+                  </TableRow>
                 ) : data.users.map((user) => (
-                  <Table.Row key={user.id}>
-                    <Table.Cell><Text size="2">{user.email}</Text></Table.Cell>
-                    <Table.Cell><Text size="2" color="gray">{user.username}</Text></Table.Cell>
-                    <Table.Cell>
-                      <Badge color={user.role === 'admin' ? 'yellow' : 'gray'} variant="soft" radius="full">
-                        {user.role}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>
+                  <TableRow key={user.id}>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="text-gray-500">{user.username}</TableCell>
+                    <TableCell>
+                      <Badge tone={user.role === 'admin' ? 'amber' : 'gray'}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
                       {user.subscription ? (
-                        <Badge color={planColor(user.subscription.planSlug)} variant="soft" radius="full">
-                          {user.subscription.planSlug}
-                        </Badge>
-                      ) : <Text color="gray">—</Text>}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="2" color="gray">{formatExpiry(user.subscription?.expiresAt ?? null)}</Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Flex gap="3">
-                        <IconButton size="2" variant="ghost" color="gray" onClick={() => setEditTarget(user)} aria-label="Edit user">
-                          <iconify-icon icon="solar:pen-linear" width="16" />
-                        </IconButton>
-                        <IconButton size="2" variant="ghost" color="red" onClick={() => setDeleteTarget(user)} aria-label="Delete user">
-                          <iconify-icon icon="solar:trash-bin-trash-linear" width="16" />
-                        </IconButton>
-                      </Flex>
-                    </Table.Cell>
-                  </Table.Row>
+                        <Badge tone={planTone(user.subscription.planSlug)}>{user.subscription.planSlug}</Badge>
+                      ) : <span className="text-gray-400">—</span>}
+                    </TableCell>
+                    <TableCell className="text-gray-500">{formatExpiry(user.subscription?.expiresAt ?? null)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon-sm" className="text-gray-500" onClick={() => setEditTarget(user)} aria-label="Edit user"><Pencil /></Button>
+                        <Button variant="ghost" size="icon-sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => setDeleteTarget(user)} aria-label="Delete user"><Trash2 /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </Table.Body>
-            </Table.Root>
+              </TableBody>
+            </Table>
           )}
 
           {/* Pagination */}
-          <Flex justify="between" align="center" pt="2">
-            <Text size="1" color="gray">Page {page} of {totalPages}</Text>
-            <Flex gap="1">
-              <Button variant="soft" size="1" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+            <div className="flex items-center gap-1">
+              <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <Button key={n} size="1" variant={n === page ? 'solid' : 'soft'} onClick={() => setPage(n)}>{n}</Button>
+                <Button key={n} size="sm" variant={n === page ? 'primary' : 'secondary'} className={n === page ? '' : 'bg-black/[0.06]'} onClick={() => setPage(n)}>{n}</Button>
               ))}
-              <Button variant="soft" size="1" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</Button>
-            </Flex>
-          </Flex>
+              <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</Button>
+            </div>
+          </div>
         </div>
       </div>
 

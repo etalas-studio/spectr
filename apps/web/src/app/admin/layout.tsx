@@ -1,202 +1,114 @@
 'use client'
 
+import { TileGrid } from '@/components/app/TileGrid'
 import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Theme } from '@radix-ui/themes'
-import '@radix-ui/themes/styles.css'
+import { ChevronDown, CreditCard, Eye, Home, LayoutDashboard, LogOut, PanelLeft, Settings, UsersRound, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useAppTheme } from '../../components/app/useAppTheme'
+import { BrandMark } from '../../components/app/BrandMark'
+import { Button } from '../../components/ui/button'
+import { Toaster } from '../../components/ui/sonner'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../../components/ui/dropdown-menu'
 
-const NAV = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: 'solar:widget-2-linear' },
-  { href: '/admin/users', label: 'Users', icon: 'solar:users-group-rounded-linear' },
-  { href: '/admin/payments', label: 'Payments', icon: 'solar:card-linear' },
-  { href: '/admin/config', label: 'Configuration', icon: 'solar:settings-linear' },
+const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/users', label: 'Users', icon: UsersRound },
+  { href: '/admin/payments', label: 'Payments', icon: CreditCard },
+  { href: '/admin/config', label: 'Configuration', icon: Settings },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  useAppTheme()
   const { state, isLoading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [loggingOut, setLoggingOut] = useState(false)
-  const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768)
 
   useEffect(() => {
-    if (!isLoading && state.status === 'unauthenticated') {
-      router.replace('/login')
-    }
+    if (!isLoading && state.status === 'unauthenticated') router.replace('/login')
   }, [isLoading, state.status, router])
 
-  if (isLoading || state.status !== 'authenticated') {
-    return <div className="min-h-screen bg-neutral-950" />
-  }
+  if (isLoading || state.status !== 'authenticated') return <div className="min-h-screen bg-white" />
 
   if (state.role !== 'admin') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-400">
-        Forbidden — admin only.
-      </div>
-    )
+    return <div className="flex min-h-screen items-center justify-center bg-white text-gray-500">Forbidden — admin only.</div>
   }
 
   const handleLogout = async () => {
     setLoggingOut(true)
-    try {
-      await logout()
-      router.replace('/login')
-    } finally {
-      setLoggingOut(false)
-    }
+    try { await logout(); router.replace('/login') } finally { setLoggingOut(false) }
   }
 
   const username = state.username ?? state.email ?? '?'
   const initial = username.charAt(0).toUpperCase()
+  const current = NAV.find((n) => pathname === n.href || pathname.startsWith(`${n.href}/`))
 
   return (
-    <Theme accentColor="blue" grayColor="slate" appearance="light" radius="medium" style={{ '--accent-9': '#3b82f6', '--accent-10': '#2563eb', '--accent-a9': '#3b82f6cc' } as React.CSSProperties}>
-    <div className="flex h-screen overflow-hidden text-neutral-800" style={{ backgroundColor: '#f8fafc' }}>
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-      {sidebarOpen && (
-      <aside className="flex h-screen w-60 shrink-0 flex-col border-r px-3 py-5" style={{ backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }}>
-        {/* Brand */}
-        <div className="mb-7 px-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Spectr" className="h-6 w-auto brightness-0" />
-            <div>
-              <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>
-                Spectr
-              </span>
-              <div className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(0,0,0,0.35)' }}>
-                Admin
-              </div>
-            </div>
-          </div>
-          <button
-            className="p-1 rounded transition-colors hover:bg-black/5"
-            onClick={() => setSidebarOpen(false)}
-            aria-label="Collapse sidebar"
-          >
-            <iconify-icon icon="solar:sidebar-minimalistic-linear" width="18" style={{ color: 'rgba(0,0,0,0.4)' }} />
-          </button>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex flex-col gap-4">
-          <div className="flex flex-col">
-            <span className="px-3 mb-1 text-[11px] font-medium tracking-wide" style={{ color: 'rgba(0,0,0,0.3)' }}>Manage</span>
-            {NAV.map(({ href, label, icon }) => {
-              const active = pathname === href
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
-                  style={active
-                    ? { backgroundColor: '#3b82f6', color: '#ffffff', fontWeight: 500 }
-                    : { color: '#374151' }
-                  }
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(0,0,0,0.06)' }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = '' }}
-                >
-                  <iconify-icon icon={icon} width="16" />
-                  {label}
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="flex flex-col">
-            <span className="px-3 mb-1 text-[11px] font-medium tracking-wide" style={{ color: 'rgba(0,0,0,0.3)' }}>View</span>
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
-              style={{ color: '#374151' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(0,0,0,0.06)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '' }}
-            >
-              <iconify-icon icon="solar:eye-linear" width="16" />
-              User Dashboard
-            </Link>
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
-              style={{ color: '#374151' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(0,0,0,0.06)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '' }}
-            >
-              <iconify-icon icon="solar:home-2-linear" width="16" />
-              Landing Page
-            </Link>
-          </div>
-        </nav>
-
-        {/* Bottom: user pill */}
-        <div className="mt-auto border-t pt-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-
-          {/* User pill */}
-          <button
-            onClick={() => setShowAccountMenu(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors"
-            style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.08)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-          >
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#3b82f6' }}>
-              {initial}
-            </div>
-            <p className="text-xs font-medium truncate" style={{ color: '#111827' }}>{username}</p>
-          </button>
-
-          {showAccountMenu && (
-            <div className="fixed inset-0 z-50" onClick={() => setShowAccountMenu(false)}>
-              <style>{`@keyframes slideUp { from { transform: translateY(4px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
-              <div
-                className="absolute bottom-16 left-3 w-[200px] rounded-xl overflow-hidden"
-                style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', animation: 'slideUp 0.15s ease-out', boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-                  <p className="text-sm font-semibold" style={{ color: '#111827' }}>{username}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>{state.email}</p>
+    <>
+      <div className="ap-root flex h-dvh overflow-hidden">
+        {sidebarOpen && (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+            <aside className="fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-white md:static md:z-auto" aria-label="Admin sidebar">
+              <div className="flex items-center justify-between px-4 pt-5 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <BrandMark />
+                  <div className="leading-tight">
+                    <span className="block text-sm font-semibold tracking-[0.18em] uppercase">Spectr</span>
+                    <span className="block text-[10px] tracking-[0.14em] text-black/40 uppercase">Admin</span>
+                  </div>
                 </div>
-                <div className="p-2">
-                  <button
-                    onClick={() => { setShowAccountMenu(false); void handleLogout() }}
-                    disabled={loggingOut}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors text-left disabled:opacity-50"
-                    style={{ color: '#f87171' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
-                  >
-                    <iconify-icon icon="solar:logout-2-linear" width="15" />
-                    {loggingOut ? 'Signing out…' : 'Sign out'}
-                  </button>
-                </div>
+                <Button variant="ghost" size="icon-sm" onClick={() => setSidebarOpen(false)} aria-label="Collapse sidebar" className="text-black/40"><PanelLeft /></Button>
               </div>
-            </div>
-          )}
-        </div>
-      </aside>
-      )}
 
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {!sidebarOpen && (
-          <button
-            className="m-4 p-1.5 rounded-lg hover:bg-black/8 transition-colors self-start"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open sidebar"
-          >
-            <iconify-icon icon="solar:hamburger-menu-linear" width="20" style={{ color: 'rgba(0,0,0,0.5)' }} />
-          </button>
+              <nav className="flex flex-col gap-5 px-3 pt-3" aria-label="Admin">
+                <div>
+                  <p className="ap-label">Manage</p>
+                  {NAV.map(({ href, label, icon: Icon }) => (
+                    <Link key={href} href={href} className="ap-nav mb-0.5" aria-current={pathname === href || pathname.startsWith(`${href}/`) ? 'page' : undefined}>
+                      <Icon className="size-4" /> {label}
+                    </Link>
+                  ))}
+                </div>
+                <div>
+                  <p className="ap-label">View</p>
+                  <Link href="/dashboard" className="ap-nav mb-0.5"><Eye className="size-4" /> User Dashboard</Link>
+                  <Link href="/" className="ap-nav"><Home className="size-4" /> Landing Page</Link>
+                </div>
+              </nav>
+            </aside>
+          </>
         )}
-        <div className="flex-1 overflow-hidden">
-          {children}
+
+        <div className="ap-main" id="main">
+          <TileGrid />
+          <header className="relative z-10 flex h-16 shrink-0 items-center gap-3 px-6">
+            {!sidebarOpen && <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar" className="-ml-2 text-gray-500"><PanelLeft /></Button>}
+            <h1 className="sr-only">{current?.label ?? 'Admin'}</h1>
+            <div className="flex-1" />
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-10 items-center gap-2.5 rounded-full py-1 pr-2 pl-1 transition-colors hover:bg-white/60" aria-label="Account menu">
+                <span className="ap-avatar size-9 text-sm">{initial}</span>
+                <span className="hidden max-w-[160px] truncate text-sm font-medium sm:block">{username}</span>
+                <ChevronDown className="hidden size-3.5 text-gray-400 sm:block" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2">
+                <div className="px-2 py-2">
+                  <p className="truncate text-sm font-semibold">{username}</p>
+                  <p className="truncate text-xs text-gray-500">{state.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" disabled={loggingOut} onClick={() => void handleLogout()} className="h-9"><LogOut /> {loggingOut ? 'Signing out…' : 'Sign out'}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <div className="ap-scroll relative z-[1] min-h-0 flex-1 overflow-y-auto">{children}</div>
         </div>
-      </main>
-    </div>
-    </Theme>
+      </div>
+      <Toaster />
+    </>
   )
 }

@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { Mail, BookOpen, CreditCard, LifeBuoy, MessageCircleQuestion, Rocket, ShieldQuestion, Sparkles, Video, LayoutGrid, type LucideIcon } from 'lucide-react'
 import { useLanguage } from '../lib/i18n'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
-const HELP_SECTIONS = [
+const HELP_SECTIONS: { title: { en: string; id: string }; icon: LucideIcon; items: { q: { en: string; id: string }; a: { en: string; id: string } }[] }[] = [
   {
     title: { en: 'Getting Started', id: 'Memulai' },
-    icon: 'solar:rocket-2-linear',
+    icon: Rocket,
     items: [
       {
         q: { en: 'What is Spectr?', id: 'Apa itu Spectr?' },
@@ -22,7 +25,7 @@ const HELP_SECTIONS = [
   },
   {
     title: { en: 'Features', id: 'Fitur' },
-    icon: 'solar:widget-2-linear',
+    icon: LayoutGrid,
     items: [
       {
         q: { en: 'How are documents saved?', id: 'Bagaimana cara menyimpan dokumen?' },
@@ -40,11 +43,11 @@ const HELP_SECTIONS = [
   },
   {
     title: { en: 'Troubleshooting', id: 'Troubleshooting' },
-    icon: 'solar:danger-triangle-linear',
+    icon: ShieldQuestion,
     items: [
       {
         q: { en: "Document doesn't appear after submit?", id: 'Dokumen tidak muncul setelah submit?' },
-        a: { en: 'Try refreshing the page. If it still doesn\'t appear, check your internet connection and try submitting again.', id: 'Coba refresh halaman. Jika masih tidak muncul, pastikan koneksi internet stabil dan coba submit ulang.' },
+        a: { en: "Try refreshing the page. If it still doesn't appear, check your internet connection and try submitting again.", id: 'Coba refresh halaman. Jika masih tidak muncul, pastikan koneksi internet stabil dan coba submit ulang.' },
       },
       {
         q: { en: 'AI is responding slowly?', id: 'AI lambat merespons?' },
@@ -58,7 +61,7 @@ const HELP_SECTIONS = [
   },
   {
     title: { en: 'Plans & Subscription', id: 'Paket & Langganan' },
-    icon: 'solar:card-linear',
+    icon: CreditCard,
     items: [
       {
         q: { en: "What's the difference between Starter and Pro?", id: 'Apa perbedaan Starter dan Pro?' },
@@ -66,7 +69,7 @@ const HELP_SECTIONS = [
       },
       {
         q: { en: 'How do I upgrade to Pro?', id: 'Bagaimana cara upgrade ke Pro?' },
-        a: { en: 'Click the "Upgrade to PRO" button in the left sidebar. You\'ll be taken to the payment page.', id: 'Klik tombol "Upgrade ke PRO" di sidebar kiri. Anda akan diarahkan ke halaman pembayaran.' },
+        a: { en: 'Click "Upgrade paket" in the account menu at the bottom of the sidebar.', id: 'Klik "Upgrade paket" di menu akun di bagian bawah sidebar.' },
       },
       {
         q: { en: 'Is there a free plan?', id: 'Apakah ada paket gratis?' },
@@ -76,138 +79,55 @@ const HELP_SECTIONS = [
   },
 ]
 
-const QUICK_LINKS = [
-  { icon: 'solar:chat-round-dots-linear', label: { en: 'Chat with Team', id: 'Chat dengan Tim' }, sub: { en: 'Contact support directly', id: 'Hubungi support langsung' } },
-  { icon: 'solar:book-linear', label: { en: 'Documentation', id: 'Dokumentasi' }, sub: { en: 'Full guide', id: 'Panduan lengkap' } },
-  { icon: 'solar:video-frame-play-horizontal-linear', label: { en: 'Video Tutorial', id: 'Video Tutorial' }, sub: { en: 'Step-by-step visual', id: 'Step-by-step visual' } },
-  { icon: 'solar:stars-linear', label: { en: 'Changelog', id: 'Changelog' }, sub: { en: 'Latest updates', id: 'Update terbaru' } },
+const QUICK_LINKS: { icon: LucideIcon; label: { en: string; id: string }; sub: { en: string; id: string } }[] = [
+  { icon: MessageCircleQuestion, label: { en: 'Chat with Team', id: 'Chat dengan Tim' }, sub: { en: 'Contact support directly', id: 'Hubungi support langsung' } },
+  { icon: BookOpen, label: { en: 'Documentation', id: 'Dokumentasi' }, sub: { en: 'Full guide', id: 'Panduan lengkap' } },
+  { icon: Video, label: { en: 'Video Tutorial', id: 'Video Tutorial' }, sub: { en: 'Step-by-step visual', id: 'Step-by-step visual' } },
+  { icon: Sparkles, label: { en: 'Changelog', id: 'Changelog' }, sub: { en: 'Latest updates', id: 'Update terbaru' } },
 ]
 
 export default function HelpPage() {
   const { lang } = useLanguage()
-  const [open, setOpen] = useState<string | null>(null)
   const L = (s: { en: string; id: string }) => s[lang]
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '32px', backgroundColor: '#f4ebe1' }}>
-      <div style={{ maxWidth: '672px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ color: '#1a1a1a', fontFamily: "'Bowlby One', system-ui", fontSize: '22px', letterSpacing: '-0.03em', margin: 0 }}>
-            HELP & DOCS
-          </h1>
-          <p style={{ color: 'rgba(0,0,0,0.5)', fontSize: '13px', marginTop: '4px' }}>
-            {lang === 'id' ? 'Panduan penggunaan Spectr' : 'Spectr usage guide'}
-          </p>
-        </div>
-
-        {/* Quick links */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
-          {QUICK_LINKS.map(({ icon, label, sub }) => (
-            <button
-              key={label.en}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '16px',
-                borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
-                backgroundColor: '#0a0a0a', border: '1px solid #0a0a0a',
-                transition: 'opacity 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '8px', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'rgba(249,24,20,0.2)',
-              }}>
-                <iconify-icon icon={icon} width="18" style={{ color: '#f91814' }} />
-              </div>
-              <div>
-                <p style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, margin: 0 }}>{L(label)}</p>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: 0 }}>{L(sub)}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* FAQ accordion */}
-        {HELP_SECTIONS.map((section) => (
-          <div key={section.title.en} style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-              <iconify-icon icon={section.icon} width="13" style={{ color: 'rgba(0,0,0,0.4)' }} />
-              <span style={{ color: '#1a1a1a', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                {L(section.title)}
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {section.items.map((item, i) => {
-                const itemKey = `${section.title.en}-${i}`
-                const isOpen = open === itemKey
-                return (
-                  <div key={itemKey} style={{ borderRadius: '10px', overflow: 'hidden', backgroundColor: '#0a0a0a' }}>
-                    <button
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 20px', textAlign: 'left', cursor: 'pointer',
-                        backgroundColor: isOpen ? 'rgba(255,255,255,0.04)' : 'transparent',
-                        border: 'none', transition: 'background-color 0.15s',
-                      }}
-                      onClick={() => setOpen(isOpen ? null : itemKey)}
-                      onMouseEnter={e => { if (!isOpen) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)' }}
-                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = isOpen ? 'rgba(255,255,255,0.04)' : 'transparent' }}
-                    >
-                      <span style={{ color: '#ffffff', fontSize: '13px', fontWeight: 500, paddingRight: '16px' }}>{L(item.q)}</span>
-                      <iconify-icon
-                        icon={isOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'}
-                        width="14"
-                        style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div style={{ padding: '0 20px 16px' }}>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{L(item.a)}</p>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+    <div className="px-6 pt-2 pb-6">
+      <div className="mb-8 grid grid-cols-2 gap-3">
+        {QUICK_LINKS.map(({ icon: Icon, label, sub }) => (
+          <Button key={label.en} variant="outline" className="h-auto justify-start gap-3 rounded-xl p-4 text-left whitespace-normal">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="size-[18px]" /></span>
+            <span>
+              <span className="block text-sm font-semibold">{L(label)}</span>
+              <span className="mt-0.5 block text-xs font-normal text-gray-400">{L(sub)}</span>
+            </span>
+          </Button>
         ))}
+      </div>
 
-        {/* Contact banner */}
-        <div style={{
-          marginTop: '32px', padding: '20px', borderRadius: '12px',
-          display: 'flex', alignItems: 'center', gap: '16px',
-          backgroundColor: '#0a0a0a', border: '1px solid #0a0a0a',
-        }}>
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: '#f91814',
-          }}>
-            <iconify-icon icon="solar:chat-round-dots-bold" width="18" style={{ color: '#fff' }} />
+      {HELP_SECTIONS.map((section) => (
+        <div key={section.title.en} className="mb-6">
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <section.icon className="size-[13px]" />
+            <span className="text-[11px] font-semibold tracking-widest uppercase">{L(section.title)}</span>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, margin: 0 }}>
-              {lang === 'id' ? 'Butuh bantuan lebih?' : 'Need more help?'}
-            </p>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginTop: '2px', marginBottom: 0 }}>
-              {lang === 'id' ? 'Tim kami siap membantu via chat langsung.' : 'Our team is ready to help via live chat.'}
-            </p>
-          </div>
-          <button style={{
-            flexShrink: 0, padding: '8px 16px', borderRadius: '999px',
-            backgroundColor: '#f91814', color: '#fff',
-            fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
-            transition: 'opacity 0.15s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
-            {lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}
-          </button>
+          <Accordion>
+            {section.items.map((item, i) => (
+              <AccordionItem key={i} value={`${section.title.en}-${i}`}>
+                <AccordionTrigger>{L(item.q)}</AccordionTrigger>
+                <AccordionContent>{L(item.a)}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
+      ))}
+
+      <div className="mt-8 flex items-center gap-4 rounded-2xl border bg-white p-5">
+        <Avatar className="size-10 bg-linear-to-b from-[#2f6df0] to-[#1d4ed8] text-white"><AvatarFallback className="bg-transparent"><LifeBuoy className="size-[18px]" /></AvatarFallback></Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{lang === 'id' ? 'Butuh bantuan lebih?' : 'Need more help?'}</p>
+          <p className="mt-0.5 text-xs text-gray-400">{lang === 'id' ? 'Tim kami siap membantu via chat langsung.' : 'Our team is ready to help via live chat.'}</p>
+        </div>
+        <Button variant="primary" className="h-9 px-4 text-sm font-semibold" render={<a href="mailto:hello@etalas.com" />}><Mail /> {lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}</Button>
       </div>
     </div>
   )

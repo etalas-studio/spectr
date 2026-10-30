@@ -19,6 +19,7 @@ export interface LocalConversation {
   summary: string
   description: string
   createdAt: string
+  updatedAt?: string
   projectId: string | null
   type: ConversationType
   content?: string // AI-generated output (server: conversation.output)
@@ -61,6 +62,7 @@ function toLocal(c: ServerConversation): LocalConversation {
     summary: c.title,
     description: c.prompt,
     createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
     projectId: c.projectId ?? null,
     type: (c.type as ConversationType) ?? 'general',
     content: c.output ?? undefined,

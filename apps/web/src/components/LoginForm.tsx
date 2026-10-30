@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { useLanguage } from '../lib/i18n'
 import { postResendVerification } from '../api/auth'
 
-const interTight = "'Inter Tight', 'Inter', sans-serif"
+const interTight = "'Plus Jakarta Sans', sans-serif"
 
 interface LoginFormProps {
   onSubmit: (username: string, password: string) => Promise<void>

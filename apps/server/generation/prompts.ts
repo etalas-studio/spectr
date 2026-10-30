@@ -11,7 +11,7 @@ Write a professional PRD document covering:
 5. Constraints: technical, legal, regulatory, or timeline requirements
 6. Stakeholders: named parties with decision authority
 7. Timeline: project timeline if mentioned
-8. Open Questions: things that need clarification from the client before development starts
+8. Open Questions: ONLY include questions that (a) cannot be reasonably assumed from context, AND (b) would fundamentally change the architecture or scope if answered differently. Do NOT include: naming/acronym clarifications, timeline questions if not mentioned, implementation details that have an obvious default, or anything that a senior PM would just decide and move on. If nothing genuinely qualifies, omit this section entirely.
 
 Rules:
 - Base everything strictly on what was stated in the brief — do not invent features
