@@ -8,6 +8,9 @@ export interface AdminStatsPayment {
   planSlug: string | null;
   grossAmount: string;
   transactionStatus: string;
+  localStatus: string;
+  /** Normalised outcome derived from local_status: what the dashboard shows. */
+  status: "settled" | "pending" | "failed";
   fraudStatus: string | null;
   createdAt: string;
 }
@@ -15,12 +18,34 @@ export interface AdminStatsPayment {
 export interface TopUser {
   email: string;
   username: string;
+  avatarUrl: string | null;
   totalUsage: number;
 }
 
 export interface RevenueTrendPoint {
   month: string; // "YYYY-MM"
   revenue: number;
+}
+
+export interface MonthlyTrendPoint {
+  month: string; // "YYYY-MM"
+  totalUsers: number; // cumulative users at the end of that month
+  newUsers: number;
+  settledPayments: number;
+}
+
+const FAILED_LOCAL = ["failed", "cancelled", "expired"] as const;
+const PAID_LOCAL = ["paid", "partially_refunded"] as const;
+
+function paymentOutcome(localStatus: string): "settled" | "pending" | "failed" {
+  if ((PAID_LOCAL as readonly string[]).includes(localStatus)) return "settled";
+  if ((FAILED_LOCAL as readonly string[]).includes(localStatus)) return "failed";
+  if (localStatus === "refunded") return "failed";
+  return "pending";
+}
+
+function monthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export interface AdminStats {
@@ -37,6 +62,7 @@ export interface AdminStats {
   newUsersLastMonth: number;
   topUsersByUsage: TopUser[];
   revenueTrend: RevenueTrendPoint[];
+  monthlyTrends: MonthlyTrendPoint[];
 }
 
 export interface AdminUser {
@@ -84,7 +110,7 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
     .from(payments)
     .where(
       and(
-        eq(payments.transactionStatus, "settlement"),
+        inArray(payments.localStatus, [...PAID_LOCAL]),
         gt(payments.createdAt, monthStart),
       ),
     );
@@ -105,6 +131,7 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
       planSlug: payments.planSlug,
       grossAmount: payments.grossAmount,
       transactionStatus: payments.transactionStatus,
+      localStatus: payments.localStatus,
       fraudStatus: payments.fraudStatus,
       createdAt: payments.createdAt,
     })
@@ -121,16 +148,21 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
   const docMap: Record<string, number> = {};
   for (const r of docTypeRows) docMap[r.type] = r.count;
 
-  // Payment funnel this month
+  // Payment funnel this month, from local_status (the app-owned state machine)
   const funnelRows = await db
-    .select({ status: payments.transactionStatus, count: sql<number>`cast(count(*) as int)` })
+    .select({ status: payments.localStatus, count: sql<number>`cast(count(*) as int)` })
     .from(payments)
     .where(gt(payments.createdAt, monthStart))
-    .groupBy(payments.transactionStatus);
-  const funnelMap: Record<string, number> = {};
-  for (const r of funnelRows) funnelMap[r.status] = r.count;
-  const failedCount =
-    (funnelMap["expire"] ?? 0) + (funnelMap["cancel"] ?? 0) + (funnelMap["deny"] ?? 0);
+    .groupBy(payments.localStatus);
+  let funnelInitiated = 0;
+  let funnelSettled = 0;
+  let funnelFailed = 0;
+  for (const r of funnelRows) {
+    funnelInitiated += r.count;
+    const outcome = paymentOutcome(r.status);
+    if (outcome === "settled") funnelSettled += r.count;
+    else if (outcome === "failed") funnelFailed += r.count;
+  }
 
   // Subscriptions expiring within 7 days
   const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -163,11 +195,12 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
     .select({
       email: users.email,
       username: users.username,
+      avatarUrl: users.avatarUrl,
       totalUsage: sql<number>`cast(sum(${usage.count}) as int)`,
     })
     .from(usage)
     .innerJoin(users, eq(usage.userId, users.id))
-    .groupBy(users.id, users.email, users.username)
+    .groupBy(users.id, users.email, users.username, users.avatarUrl)
     .orderBy(desc(sql`sum(${usage.count})`))
     .limit(5);
 
@@ -180,12 +213,46 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
     .from(payments)
     .where(
       and(
-        eq(payments.transactionStatus, "settlement"),
+        inArray(payments.localStatus, [...PAID_LOCAL]),
         gt(payments.createdAt, new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)),
       ),
     )
     .groupBy(sql`to_char(${payments.createdAt}, 'YYYY-MM')`)
     .orderBy(sql`to_char(${payments.createdAt}, 'YYYY-MM')`);
+
+  // Last 6 calendar months: signups, cumulative users, settled payments
+  const trendStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const [signupRows, settledRows, [beforeRow]] = await Promise.all([
+    db
+      .select({
+        month: sql<string>`to_char(${users.createdAt}, 'YYYY-MM')`,
+        count: sql<number>`cast(count(*) as int)`,
+      })
+      .from(users)
+      .where(gt(users.createdAt, trendStart))
+      .groupBy(sql`to_char(${users.createdAt}, 'YYYY-MM')`),
+    db
+      .select({
+        month: sql<string>`to_char(${payments.createdAt}, 'YYYY-MM')`,
+        count: sql<number>`cast(count(*) as int)`,
+      })
+      .from(payments)
+      .where(and(inArray(payments.localStatus, [...PAID_LOCAL]), gt(payments.createdAt, trendStart)))
+      .groupBy(sql`to_char(${payments.createdAt}, 'YYYY-MM')`),
+    db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(users)
+      .where(lt(users.createdAt, trendStart)),
+  ]);
+  const signupMap = new Map(signupRows.map((r) => [r.month, r.count]));
+  const settledMap = new Map(settledRows.map((r) => [r.month, r.count]));
+  let running = beforeRow?.count ?? 0;
+  const monthlyTrends: MonthlyTrendPoint[] = Array.from({ length: 6 }, (_, i) => {
+    const key = monthKey(new Date(now.getFullYear(), now.getMonth() - (5 - i), 1));
+    const newUsers = signupMap.get(key) ?? 0;
+    running += newUsers;
+    return { month: key, totalUsers: running, newUsers, settledPayments: settledMap.get(key) ?? 0 };
+  });
 
   return {
     totalUsers,
@@ -203,6 +270,8 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
       planSlug: r.planSlug,
       grossAmount: r.grossAmount,
       transactionStatus: r.transactionStatus,
+      localStatus: r.localStatus,
+      status: paymentOutcome(r.localStatus),
       fraudStatus: r.fraudStatus,
       createdAt: r.createdAt.toISOString(),
     })),
@@ -213,9 +282,9 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
       specs: docMap["specs"] ?? 0,
     },
     paymentFunnel: {
-      initiated: funnelMap["pending"] ?? 0,
-      settled: funnelMap["settlement"] ?? 0,
-      failed: failedCount,
+      initiated: funnelInitiated,
+      settled: funnelSettled,
+      failed: funnelFailed,
     },
     expiringSubsCount: expiringRow?.count ?? 0,
     newUsersThisMonth: newThisRow?.count ?? 0,
@@ -223,12 +292,14 @@ export async function getAdminStats(db: Database): Promise<AdminStats> {
     topUsersByUsage: topUsersRaw.map((r) => ({
       email: r.email,
       username: r.username,
+      avatarUrl: r.avatarUrl ?? null,
       totalUsage: r.totalUsage ?? 0,
     })),
     revenueTrend: trendRows.map((r) => ({
       month: r.month ?? "",
       revenue: r.revenue ?? 0,
     })),
+    monthlyTrends,
   };
 }
 
