@@ -94,15 +94,16 @@ describe("stageInstruction", () => {
     assert.match(instruction, /color palette|brand colors/i);
   });
 
-  it("tells the model NOT to ask about timeline for a prototype", () => {
+  it("does not interrogate about timeline when clarifying a prototype", () => {
     const instruction = stageInstruction("clarifying", "prototype");
-    assert.match(instruction, /do not ask about timeline/i);
+    assert.doesNotMatch(instruction, /timeline/i);
+    assert.match(instruction, /max 2 questions/i);
   });
 
-  it("keeps the generic clarifying instruction (incl. timeline) for non-prototype deliverables", () => {
+  it("keeps the lean clarifying instruction (one question max, no logo) for non-prototype deliverables", () => {
     const instruction = stageInstruction("clarifying", "prd");
     assert.doesNotMatch(instruction, /logo/i);
-    assert.match(instruction, /timeline/i);
+    assert.match(instruction, /at most ONE question/i);
   });
 });
 

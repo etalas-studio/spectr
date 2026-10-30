@@ -1,7 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Table, TextField, Select, Button, Text, Flex, Badge } from '@radix-ui/themes'
+import { ChevronDownIcon, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectIcon, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { fetchAdminStats, type AdminStatsPayment } from '../../../api/admin'
 
 const PAGE_SIZE = 10
@@ -10,12 +15,14 @@ function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`
 }
 
-function statusBadge(status: string) {
-  const color = status === 'settlement' ? 'green' : status === 'pending' ? 'yellow' : 'red'
-  return <Badge color={color} variant="soft" radius="full">{status}</Badge>
+function statusBadge(status: AdminStatsPayment['status']) {
+  const tone = status === 'settled' ? 'green' : status === 'pending' ? 'amber' : 'red'
+  return <Badge tone={tone}>{status}</Badge>
 }
 
-const STATUS_OPTIONS = ['all', 'pending', 'settlement', 'failure']
+const fieldTrigger = 'h-10 w-40 justify-between rounded-xl border border-input bg-muted/60 px-3.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30'
+
+const STATUS_OPTIONS = ['all', 'pending', 'settled', 'failed']
 const PLAN_OPTIONS = ['all', 'starter', 'pro']
 
 export default function PaymentsPage() {
@@ -42,7 +49,7 @@ export default function PaymentsPage() {
     return payments.filter(p => {
       const q = search.toLowerCase()
       const matchSearch = !q || p.orderId.toLowerCase().includes(q) || (p.userEmail ?? '').toLowerCase().includes(q)
-      const matchStatus = statusFilter === 'all' || p.transactionStatus === statusFilter
+      const matchStatus = statusFilter === 'all' || p.status === statusFilter
       const matchPlan = planFilter === 'all' || p.planSlug === planFilter
       return matchSearch && matchStatus && matchPlan
     })
@@ -58,87 +65,94 @@ export default function PaymentsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="shrink-0 px-10 pt-10 pb-6" style={{ backgroundColor: '#f8fafc' }}>
-        <h1 className="text-3xl font-semibold tracking-tight" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Payments</h1>
-        <p className="mt-1.5 text-sm" style={{ color: 'rgba(0,0,0,0.45)' }}>Recent transactions.</p>
+      <header className="shrink-0 px-6 pt-2 pb-5">
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Payments</h1>
+        <p className="mt-1.5 text-sm text-black/45">Recent transactions.</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-10 pb-10">
         {error && <p className="text-sm text-red-500">{error}</p>}
         {!payments && !error && <p className="text-sm text-neutral-400">Loading…</p>}
         {payments && (
-          <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-6">
+          <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-5">
 
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-3">
-              <TextField.Root
-                placeholder="Search order or email…"
-                value={search}
-                onChange={e => setSearchReset(e.target.value)}
-                style={{ width: 260 }}
-              />
-              <Select.Root value={statusFilter} onValueChange={setStatusReset}>
-                <Select.Trigger placeholder="All statuses" />
-                <Select.Content>
+              <div className="relative w-[260px]">
+                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search order or email…"
+                  value={search}
+                  onChange={e => setSearchReset(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={(v) => setStatusReset(v ?? 'all')}>
+                <SelectTrigger className={fieldTrigger} aria-label="Filter by status">
+                  <SelectValue>{(v) => (v === 'all' ? 'All statuses' : (v as string))}</SelectValue>
+                  <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                </SelectTrigger>
+                <SelectContent>
                   {STATUS_OPTIONS.map(s => (
-                    <Select.Item key={s} value={s}>{s === 'all' ? 'All statuses' : s}</Select.Item>
+                    <SelectItem key={s} value={s}>{s === 'all' ? 'All statuses' : s}</SelectItem>
                   ))}
-                </Select.Content>
-              </Select.Root>
-              <Select.Root value={planFilter} onValueChange={setPlanReset}>
-                <Select.Trigger placeholder="All plans" />
-                <Select.Content>
+                </SelectContent>
+              </Select>
+              <Select value={planFilter} onValueChange={(v) => setPlanReset(v ?? 'all')}>
+                <SelectTrigger className={fieldTrigger} aria-label="Filter by plan">
+                  <SelectValue>{(v) => (v === 'all' ? 'All plans' : (v as string))}</SelectValue>
+                  <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                </SelectTrigger>
+                <SelectContent>
                   {PLAN_OPTIONS.map(p => (
-                    <Select.Item key={p} value={p}>{p === 'all' ? 'All plans' : p}</Select.Item>
+                    <SelectItem key={p} value={p}>{p === 'all' ? 'All plans' : p}</SelectItem>
                   ))}
-                </Select.Content>
-              </Select.Root>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Table */}
             {paginated.length === 0 ? (
               <p className="text-sm text-neutral-500 py-4">No payments match your filters.</p>
             ) : (
-              <Table.Root variant="surface" size="2">
-                <Table.Header>
-                  <Table.Row>
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
                     {['Order', 'Email', 'Plan', 'Amount', 'Status', 'Fraud', 'Date'].map((h) => (
-                      <Table.ColumnHeaderCell key={h}>{h}</Table.ColumnHeaderCell>
+                      <TableHead key={h}>{h}</TableHead>
                     ))}
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {paginated.map((p) => (
-                    <Table.Row key={p.orderId}>
-                      <Table.Cell><span className="font-mono text-xs text-neutral-500">{p.orderId.slice(0, 16)}…</span></Table.Cell>
-                      <Table.Cell>{p.userEmail ?? '—'}</Table.Cell>
-                      <Table.Cell>
-                        {p.planSlug ? (
-                          <span className="rounded-full border border-black/[0.08] bg-white px-2.5 py-0.5 text-xs text-neutral-700">{p.planSlug}</span>
-                        ) : '—'}
-                      </Table.Cell>
-                      <Table.Cell><span className="font-medium" style={{ color: '#111827' }}>{formatRupiah(Number(p.grossAmount))}</span></Table.Cell>
-                      <Table.Cell>{statusBadge(p.transactionStatus)}</Table.Cell>
-                      <Table.Cell className="text-neutral-500">{p.fraudStatus ?? '—'}</Table.Cell>
-                      <Table.Cell className="text-neutral-500">{new Date(p.createdAt).toLocaleDateString('id-ID')}</Table.Cell>
-                    </Table.Row>
+                    <TableRow key={p.orderId}>
+                      <TableCell><span className="font-mono text-xs text-gray-500">{p.orderId.slice(0, 16)}…</span></TableCell>
+                      <TableCell>{p.userEmail ?? '—'}</TableCell>
+                      <TableCell>
+                        {p.planSlug ? <Badge tone="blue">{p.planSlug}</Badge> : '—'}
+                      </TableCell>
+                      <TableCell><span className="font-medium text-[#111827]">{formatRupiah(Number(p.grossAmount))}</span></TableCell>
+                      <TableCell>{statusBadge(p.status)}</TableCell>
+                      <TableCell className="text-gray-500">{p.fraudStatus ?? '—'}</TableCell>
+                      <TableCell className="text-gray-500">{new Date(p.createdAt).toLocaleDateString('id-ID')}</TableCell>
+                    </TableRow>
                   ))}
-                </Table.Body>
-              </Table.Root>
+                </TableBody>
+              </Table>
             )}
 
             {/* Pagination */}
-            <div className="flex items-center justify-between pt-2">
-              <Flex align="center" gap="3">
-                <Text size="1" color="gray">Page {page} of {totalPages}</Text>
-                <Text size="1" color="gray">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</Text>
-              </Flex>
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <span>Page {page} of {totalPages}</span>
+                <span>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+              </div>
               <div className="flex items-center gap-1">
-                <Button variant="soft" size="1" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                  <Button key={n} size="1" variant={n === page ? 'solid' : 'soft'} onClick={() => setPage(n)}>{n}</Button>
+                  <Button key={n} size="sm" variant={n === page ? 'primary' : 'secondary'} className={n === page ? '' : 'bg-black/[0.06]'} onClick={() => setPage(n)}>{n}</Button>
                 ))}
-                <Button variant="soft" size="1" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+                <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
               </div>
             </div>
           </div>

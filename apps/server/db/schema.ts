@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   // "user" | "admin" — admin gates the internal operator panel (/admin).
   role: text("role").notNull().default("user"),
+  // Profile photo URL (nullable; shown as the avatar in the admin panel when set).
+  avatarUrl: text("avatar_url"),
   createdAt: ts("created_at").notNull(),
 });
 

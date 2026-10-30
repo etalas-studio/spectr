@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight, Eye } from 'lucide-react'
 import { getDocument, type DocumentDetail } from '../api/documents'
+import { typeMeta } from './app/meta'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 export interface DocumentRefMeta {
   id: string
@@ -8,14 +12,7 @@ export interface DocumentRefMeta {
   commitSha: string | null
 }
 
-const TYPE_META: Record<string, { label: string; color: string; ic: string; icon: string }> = {
-  prd: { label: 'PRD', color: '#fef3c7', ic: '#f97316', icon: 'solar:document-add-linear' },
-  quotation: { label: 'Quotation', color: '#dcfce7', ic: '#16a34a', icon: 'solar:dollar-minimalistic-linear' },
-  specs: { label: 'Specs', color: '#fce7f3', ic: '#db2777', icon: 'solar:checklist-linear' },
-  prototype: { label: 'Prototype', color: '#ede9fe', ic: '#7c3aed', icon: 'solar:widget-linear' },
-  mom: { label: 'MOM', color: '#e0f2fe', ic: '#0284c7', icon: 'solar:notes-linear' },
-}
-
+// Inline card shown in the chat under an AI message; opens the reader panel.
 export default function DocumentCard({
   documentId,
   initial,
@@ -36,51 +33,32 @@ export default function DocumentCard({
     return () => { cancelled = true }
   }, [documentId])
 
-  if (error) {
-    return (
-      <div className="text-sm" style={{ color: 'rgba(0,0,0,0.45)' }}>
-        Document unavailable
-      </div>
-    )
-  }
+  if (error) return <div className="text-sm text-gray-400">Document unavailable</div>
 
-  const meta = TYPE_META[doc?.type ?? initial?.type ?? ''] ?? {
-    label: (doc?.type ?? initial?.type ?? 'Document').toUpperCase(),
-    color: 'rgba(0,0,0,0.06)',
-    ic: 'rgba(0,0,0,0.4)',
-    icon: 'solar:notes-linear',
-  }
+  const type = doc?.type ?? initial?.type ?? ''
+  const meta = typeMeta(type)
+  const label = type ? (meta.label === 'Brief' ? type.toUpperCase() : meta.label) : 'Document'
   const title = doc?.title ?? initial?.title ?? 'Document'
   const commitSha = doc?.lastCommitSha ?? initial?.commitSha ?? null
+  const Icon = meta.icon
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full max-w-md text-left rounded-2xl border p-4 transition-transform active:scale-[0.99] group"
-      style={{ backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.1)' }}
-    >
+    <Button variant="card" onClick={onClick} className="group max-w-md gap-0 rounded-2xl p-4">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color }}>
-          <iconify-icon icon={meta.icon} width="17" style={{ color: meta.ic }} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#f91814' }}>
-            {meta.label}
-          </span>
-          <p className="text-sm font-semibold truncate mt-0.5" style={{ color: '#111827' }}>{title}</p>
-        </div>
-        {commitSha && (
-          <span className="text-xs shrink-0 px-2 py-0.5 rounded-full font-mono" style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: '#6b7280' }}>
-            {commitSha.slice(0, 7)}
-          </span>
-        )}
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: meta.tint }}>
+          <Icon className="size-[17px]" style={{ color: meta.ink }} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[10px] leading-3.5 font-semibold tracking-[0.12em] text-gray-500 uppercase">{label}</span>
+          <span className="mt-0.5 block truncate text-sm font-semibold">{title}</span>
+        </span>
+        {commitSha && <Badge className="shrink-0 bg-black/5 font-mono text-gray-500">{commitSha.slice(0, 7)}</Badge>}
       </div>
-      <div className="flex items-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-        <iconify-icon icon="solar:eye-linear" width="14" style={{ color: 'rgba(0,0,0,0.4)' }} />
-        <span className="text-xs font-medium" style={{ color: 'rgba(0,0,0,0.55)' }}>Preview &amp; Download</span>
-        <iconify-icon icon="solar:arrow-right-linear" width="14" className="ml-auto transition-transform group-hover:translate-x-0.5" style={{ color: 'rgba(0,0,0,0.4)' }} />
+      <div className="mt-3 flex items-center gap-1.5 border-t pt-3 text-xs font-medium text-gray-500">
+        <Eye className="size-3.5" />
+        <span>Preview &amp; Download</span>
+        <ArrowRight className="ml-auto size-3.5 transition-transform group-hover:translate-x-0.5" />
       </div>
-    </button>
+    </Button>
   )
 }

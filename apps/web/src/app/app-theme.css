@@ -1,0 +1,147 @@
+/* Spectr app theme (user dashboard + admin). Light, blue accent. Applied while the app shell is mounted
+   via html.ap-theme so portaled shadcn dialogs/menus pick up the same tokens. Source: Spectr Dashboard Redesign. */
+
+html.ap-theme {
+  --ap-ink: #111827;
+  --ap-ink-2: #374151;
+  --ap-ink-3: #6b7280;
+  --ap-ink-4: #9ca3af;
+  --ap-line: rgba(0, 0, 0, 0.08);
+  --ap-accent: #265ee4;
+  --ap-accent-strong: #1d4ed8;
+  --ap-accent-top: #2f6df0;
+  --ap-accent-ink: #1e40af;
+  --ap-accent-tint: rgba(38, 94, 228, 0.14);
+  --ap-danger: #ef4444;
+  --ap-font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --ap-serif: 'Instrument Serif', Georgia, serif;
+
+  --background: #ffffff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #265ee4;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #111827;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: rgba(0, 0, 0, 0.05);
+  --accent-foreground: #111827;
+  --destructive: #ef4444;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.1);
+  --ring: rgba(38, 94, 228, 0.5);
+  --radius: 0.75rem;
+  color-scheme: light;
+}
+html.ap-theme body { background: #ffffff; font-family: var(--ap-font); color: var(--ap-ink); font-size: 14px; line-height: 20px; }
+
+.ap-root { font-family: var(--ap-font); color: var(--ap-ink); background: #ffffff; letter-spacing: -0.005em; }
+.ap-serif { font-family: var(--ap-serif); }
+
+/* Brand mark: the Spectr S, tinted blue, inside a soft tile */
+.ap-mark { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.95); background: linear-gradient(145deg, #f3f7ff 0%, #c9dbff 100%); box-shadow: 0 4px 10px rgba(38, 94, 228, 0.18), inset 0 1px 0 #fff; flex: none; }
+.ap-mark--lg { width: 62px; height: 62px; border-radius: 16px; background: rgba(255, 255, 255, 0.38); border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 10px 28px rgba(38, 94, 228, 0.22), inset 0 1px 0 #fff; backdrop-filter: blur(6px); }
+.ap-logo { display: block; width: 15px; height: 20px; background: linear-gradient(160deg, #4f86f5 0%, #265ee4 55%, #1d4ed8 100%); -webkit-mask: url('/logo.png') center / contain no-repeat; mask: url('/logo.png') center / contain no-repeat; }
+.ap-mark--lg .ap-logo { width: 24px; height: 32px; }
+
+/* Primary: top-lit blue gradient */
+.ap-primary { background: linear-gradient(#2f6df0, #1d4ed8); color: #fff; box-shadow: 0 4px 10px rgba(38, 94, 228, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25); border: 0; transition: filter 0.2s, transform 0.2s; }
+.ap-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.ap-primary:active:not(:disabled) { transform: translateY(1px); }
+.ap-primary:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.ap-send:disabled { opacity: 1; cursor: default; box-shadow: 0 4px 10px rgba(38, 94, 228, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+
+/* Inset main panel: pale grey-blue sky, tile grid fading from the top right, blue glow at the bottom */
+.ap-main { position: relative; flex: 999 1 560px; min-width: 0; margin: 8px 8px 8px 0; display: flex; flex-direction: column; border-radius: 16px; border: 1px solid rgba(0, 0, 0, 0.08); overflow: hidden;
+  background:
+    radial-gradient(900px 340px at 64% 114%, rgba(147, 181, 255, 0.55) 0%, rgba(147, 181, 255, 0.34) 28%, rgba(147, 181, 255, 0.14) 58%, rgba(147, 181, 255, 0.04) 82%, rgba(147, 181, 255, 0) 100%),
+    radial-gradient(1700px 540px at 38% 126%, rgba(38, 94, 228, 0.52) 0%, rgba(38, 94, 228, 0.4) 22%, rgba(38, 94, 228, 0.24) 46%, rgba(38, 94, 228, 0.1) 70%, rgba(38, 94, 228, 0.03) 88%, rgba(38, 94, 228, 0) 100%),
+    linear-gradient(0deg, rgba(30, 58, 138, 0.26) 0%, rgba(30, 58, 138, 0.15) 9%, rgba(30, 58, 138, 0.07) 20%, rgba(30, 58, 138, 0.02) 34%, rgba(30, 58, 138, 0) 46%),
+    linear-gradient(#e9ebef 0%, #eef0f4 50%, #eef1f8 100%);
+  background-repeat: no-repeat; }
+.ap-tiles { position: absolute; top: -30px; left: -30px; display: grid; grid-template-columns: repeat(16, 116px); gap: 6px; pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 0%, rgba(0, 0, 0, 0.9) 28%, transparent 80%), linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, #000 60%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(#000 0%, rgba(0, 0, 0, 0.9) 28%, transparent 80%), linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, #000 60%); mask-composite: intersect; }
+.ap-tiles i { display: block; width: 116px; height: 116px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 1px 2px rgba(17, 24, 39, 0.07), inset 0 1px 0 #fff; }
+.ap-main > :not(.ap-tiles) { position: relative; z-index: 1; }
+@media (max-width: 767px) { .ap-main { margin: 0; border-radius: 0; border: 0; } }
+
+/* Glass prompt */
+.ap-glass { background: rgba(255, 255, 255, 0.78); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 40px rgba(17, 24, 39, 0.06); backdrop-filter: blur(8px); border-radius: 18px; }
+.ap-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 12px; background: #fff; border: 1px solid rgba(0, 0, 0, 0.08); color: #374151; font-weight: 500; font-size: 14px; transition: background 0.15s; }
+.ap-pill:hover { background: #fff; }
+.ap-pill--icon { width: 40px; padding: 0; justify-content: center; }
+.ap-headline { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; font-weight: 500; letter-spacing: -0.045em; background: linear-gradient(#0f172a 0%, #1f2937 45%, #6b7280 100%) text; -webkit-text-fill-color: transparent; color: transparent; text-align: center; }
+/* Second half of the headline ("into Execution-Ready Specs") is set in the serif; "Specs" is its italic accent. */
+.ap-headline__serif { font-family: var(--ap-serif); font-weight: 400; font-size: 1.115em; letter-spacing: -0.02em; }
+.ap-headline em { font-style: italic; }
+
+/* Suggestion card with tilted translucent shapes */
+.ap-sug { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; text-align: left; padding: 16px; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.08); background: #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+.ap-sug:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08); }
+.ap-sug::before { content: ''; position: absolute; top: -70px; left: 18%; width: 280px; height: 150px; background: radial-gradient(closest-side, rgba(38, 94, 228, 0.16), rgba(38, 94, 228, 0)); }
+.ap-sug > i { position: absolute; border-radius: 30px; border: 1px solid rgba(38, 94, 228, 0.2); background: linear-gradient(145deg, rgba(38, 94, 228, 0.2), rgba(38, 94, 228, 0.04)); }
+.ap-sug > i:nth-of-type(1) { top: -34px; right: -22px; width: 124px; height: 124px; transform: rotate(14deg); }
+.ap-sug > i:nth-of-type(2) { top: -4px; right: 34px; width: 124px; height: 124px; transform: rotate(26deg); border-color: rgba(38, 94, 228, 0.16); background: linear-gradient(145deg, rgba(38, 94, 228, 0.16), rgba(38, 94, 228, 0.03)); }
+.ap-sug__ic { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.75); background: linear-gradient(145deg, #eaf1ff 0%, #bdd3ff 48%, #8db4ff 100%); box-shadow: 0 6px 14px rgba(38, 94, 228, 0.28), inset 0 1px 0 #fff; color: #1d4ed8; }
+
+/* Onboarding card (sidebar) */
+.ap-ob { position: relative; overflow: hidden; border-radius: 16px; padding: 16px; background: #fff; border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: 0 8px 24px rgba(17, 24, 39, 0.07); }
+.ap-ob::before { content: ''; position: absolute; top: 0; right: 0; width: 100%; height: 150px; background: radial-gradient(240px 150px at 100% 0%, rgba(38, 94, 228, 0.3), rgba(38, 94, 228, 0.12) 45%, rgba(38, 94, 228, 0) 100%); pointer-events: none; }
+.ap-ob__star { position: absolute; fill: #fff; filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9)); pointer-events: none; }
+.ap-seg { display: flex; gap: 4px; height: 20px; }
+.ap-seg i { flex: 1; border-radius: 4px; background: rgba(0, 0, 0, 0.08); }
+.ap-seg i.on { background: linear-gradient(#2f6df0, #1d4ed8); }
+
+/* Sidebar rows */
+.ap-nav { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; font-size: 14px; color: #374151; text-align: left; width: 100%; transition: background 0.15s; }
+.ap-nav:hover { background: rgba(0, 0, 0, 0.04); }
+.ap-nav[aria-current='page'] { background: rgba(38, 94, 228, 0.14); color: #1e40af; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(38, 94, 228, 0.18); }
+.ap-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 8px 0 12px; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.08); background: rgba(0, 0, 0, 0.03); color: #6b7280; width: 100%; text-align: left; transition: background 0.15s; }
+.ap-search:hover { background: rgba(0, 0, 0, 0.05); }
+.ap-kbd { font-size: 11px; color: #6b7280; padding: 2px 6px; border-radius: 6px; background: #fff; border: 1px solid rgba(0, 0, 0, 0.08); }
+.ap-label { font-size: 12px; font-weight: 600; color: #6b7280; padding: 0 12px 8px; }
+.ap-scroll { scrollbar-width: none; } .ap-scroll::-webkit-scrollbar { display: none; }
+
+/* Top bar */
+.ap-topbtn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: #fff; border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 1px 2px rgba(17, 24, 39, 0.06); color: #374151; transition: background 0.15s; position: relative; }
+.ap-topbtn:hover { background: #fff; }
+.ap-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0d9488; color: #fff; font-weight: 700; flex: none; }
+
+/* Artifact cards */
+.ap-art { background: #fff; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04); }
+.ap-seg-tabs { display: inline-flex; padding: 4px; border-radius: 16px; background: #e4e6eb; gap: 2px; }
+.ap-seg-tabs button { padding: 6px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; color: #4b5563; transition: background 0.15s, color 0.15s; }
+.ap-seg-tabs button[aria-selected='true'] { background: #fff; color: #111827; box-shadow: 0 1px 3px rgba(17, 24, 39, 0.12); }
+
+/* Rendered markdown (AI output + documents) */
+.ap-prose { font-size: 14px; line-height: 1.85; color: rgba(17, 24, 39, 0.85); }
+
+/* Toasts (sonner, unstyled + our classes) */
+.ap-toast { display: flex; align-items: flex-start; gap: 12px; width: 340px; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 10px 30px rgba(17, 24, 39, 0.12), 0 1px 2px rgba(17, 24, 39, 0.06); font-family: var(--ap-font); position: relative; }
+.ap-toast [data-content] { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; padding-right: 18px; }
+.ap-toast__title { font-size: 14px; font-weight: 600; color: #111827; line-height: 20px; }
+.ap-toast__desc { font-size: 13px; color: #6b7280; line-height: 18px; }
+.ap-toast__icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px; border-radius: 9999px; margin: 0; }
+.ap-toast--success .ap-toast__icon { background: #dcfce7; color: #16a34a; }
+.ap-toast--error .ap-toast__icon { background: #fee2e2; color: #ef4444; }
+.ap-toast--warning .ap-toast__icon { background: #ffedd5; color: #ea580c; }
+.ap-toast--info .ap-toast__icon { background: #e0e7ff; color: #265ee4; }
+.ap-toast__close { position: absolute; top: 12px; right: 12px; left: auto; width: 20px; height: 20px; border: 0; background: transparent; color: #9ca3af; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.ap-toast__close:hover { background: rgba(0, 0, 0, 0.05); color: #374151; }
+.ap-toast__action { margin-top: 8px; align-self: flex-start; padding: 5px 12px; font-size: 13px; font-weight: 600; color: #265ee4; background: rgba(38, 94, 228, 0.1); border-radius: 12px; border: 0; cursor: pointer; }
+.ap-toast__action:hover { background: rgba(38, 94, 228, 0.16); }
+
+.ap-logo--mute { width: 14px; height: 18px; background: rgba(0, 0, 0, 0.28); }
+html.ap-theme .spectr-output h1, html.ap-theme .spectr-output h2 { font-size: 1.2em; letter-spacing: -0.02em; }
+html.ap-theme .spectr-output h3 { font-size: 1.05em; }
+@keyframes ap-stream-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ap-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.stream-live { animation: ap-stream-in 0.15s ease-out; }
+.stream-cursor { display: inline-block; width: 2px; height: 1em; background: currentColor; margin-left: 1px; vertical-align: text-bottom; animation: ap-cursor 0.7s step-end infinite; }
+
+@media (max-width: 639px) { .ap-topbtn--wide { display: none; } }

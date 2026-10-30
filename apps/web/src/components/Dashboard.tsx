@@ -1,1354 +1,44 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+'use client'
+
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { marked } from 'marked'
+import { toast } from 'sonner'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useSubscription } from '../hooks/useSubscription'
-import { getConversations, loadConversations, loadConversationGroups, getConversationGroups, createConversationLocal, updateLocalConversation, deleteLocalConversation, renameLocalProject, sortGroupConversations, type LocalConversation, type ConversationGroup, type ConversationType } from '../lib/conversations'
-import { updateConversation as updateConversationApi, uploadAttachment, shareConversation, unshareConversation, createMessage, generateConversation, getMessages, updateMessage, type Attachment } from '../api/conversations'
-import ProjectGroup from './ProjectGroup'
+import { loadConversations, loadConversationGroups, getConversations, getConversationGroups, updateLocalConversation, deleteLocalConversation, renameLocalProject, sortGroupConversations, type LocalConversation, type ConversationGroup } from '../lib/conversations'
+import { shareConversation, unshareConversation } from '../api/conversations'
+import { deleteProject } from '../api/projects'
+import { copyText } from '../lib/clipboard'
 import { useUsage } from '../hooks/useUsage'
 import { apiUrl } from '../api/base'
-import Settings from './Settings'
-import HelpPage from './HelpPage'
-import ProfilePage from './ProfilePage'
-import PaymentPage from './PaymentPage'
-import ConfirmDeleteModal from './ConfirmDeleteModal'
-import DocumentsPanel from './DocumentsPanel'
-import DocumentCard from './DocumentCard'
-import DocumentReaderPanel from './DocumentReaderPanel'
-import { DeliverableTypeSelect } from './DeliverableTypeSelect'
 import { useLanguage, type StringKey } from '../lib/i18n'
+import DocumentsPanel from './DocumentsPanel'
+import DocumentReaderPanel from './DocumentReaderPanel'
+import ChatView from './app/ChatView'
+import Home from './app/Home'
+import { Sidebar, OnboardingCard } from './app/Sidebar'
+import { TileGrid } from './app/TileGrid'
+import { Topbar } from './app/Topbar'
+import { SearchDialog } from './app/SearchDialog'
+import { AccountDialog, HelpDialog, UpgradeDialog, type AccountTab } from './app/AccountDialog'
+import { ConfirmDialog } from './app/ConfirmDialog'
+import { ShareDialog } from './app/ShareDialog'
+import { useAppTheme } from './app/useAppTheme'
+import { Toaster } from './ui/sonner'
+import type { PlanUsage } from './app/PromptBox'
+
+type Nav = 'home' | 'documents'
 
-interface AttachedFile { name: string; type: string; dataUrl: string }
-
-function dataUrlToBlob(dataUrl: string): Blob {
-  const [meta, data] = dataUrl.split(',')
-  const mime = meta?.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
-  const bytes = atob(data ?? '')
-  const buf = new Uint8Array(bytes.length)
-  for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i)
-  return new Blob([buf], { type: mime })
-}
-
-const bowlby = "'Instrument Serif', serif"
-const inter = "'Inter', sans-serif"
-
-const NAV = [
-  { label: 'Artifacts', icon: 'solar:documents-linear', id: 'documents' },
-]
-
-const QUICK_TYPES = [
-  { label: 'PRD Lengkap',          type: 'prd'       as ConversationType, icon: 'solar:document-add-linear',        color: '#fef3c7', iconColor: '#f97316', prompt: 'Buatkan PRD lengkap untuk ' },
-  { label: 'Prototype Brief',      type: 'prototype'  as ConversationType, icon: 'solar:widget-linear',              color: '#ede9fe', iconColor: '#7c3aed', prompt: 'Buatkan prototype brief untuk ' },
-  { label: 'Workflow Automations', type: 'workflow'   as ConversationType, icon: 'solar:settings-minimalistic-linear', color: '#dbeafe', iconColor: '#2563eb', prompt: 'Buatkan workflow automation untuk ' },
-  { label: 'MOM Meeting',          type: 'mom'        as ConversationType, icon: 'solar:calendar-linear',            color: '#dcfce7', iconColor: '#16a34a', prompt: 'Buatkan MOM untuk ' },
-  { label: 'Quotation Brief',      type: 'quotation'  as ConversationType, icon: 'solar:dollar-minimalistic-linear', color: '#fce7f3', iconColor: '#db2777', prompt: 'Buatkan quotation untuk ' },
-  { label: 'Specs & Task',         type: 'specs'      as ConversationType, icon: 'solar:checklist-linear',           color: '#f0fdf4', iconColor: '#15803d', prompt: 'Buatkan specs dan task untuk ' },
-]
-
-const PIPELINE_MAP: Record<string, { type: ConversationType; title: string; desc: string; prompt: string; chip: string }> = {
-  prd:       { type: 'prd',       title: 'PRD',           desc: 'Product Requirements Documents',     prompt: 'Buatkan PRD lengkap untuk ',      chip: 'PRD Lengkap' },
-  prototype: { type: 'prototype', title: 'Prototype',     desc: 'Prototype brief dan UI flow',        prompt: 'Buatkan prototype brief untuk ',  chip: 'Prototype' },
-  quotation: { type: 'quotation', title: 'Quotation',     desc: 'Estimasi dan kalkulasi proyek',      prompt: 'Buatkan quotation untuk ',        chip: 'Quotation' },
-  specs:     { type: 'specs',     title: 'Specs & Task',  desc: 'Technical specs dan task breakdown', prompt: 'Buatkan specs dan task untuk ',   chip: 'Specs & Task' },
-}
-
-const TYPE_META: Record<string, { label: string; color: string; ic: string; icon: string }> = {
-  prd:       { label: 'PRD',       color: '#fef3c7', ic: '#f97316', icon: 'solar:document-add-linear' },
-  mom:       { label: 'MOM',       color: '#dbeafe', ic: '#2563eb', icon: 'solar:calendar-linear' },
-  quotation: { label: 'Quotation', color: '#dcfce7', ic: '#16a34a', icon: 'solar:dollar-minimalistic-linear' },
-  specs:     { label: 'Specs',     color: '#fce7f3', ic: '#db2777', icon: 'solar:checklist-linear' },
-  prototype: { label: 'Prototype', color: '#ede9fe', ic: '#7c3aed', icon: 'solar:widget-linear' },
-  workflow:  { label: 'Workflow',  color: '#dbeafe', ic: '#2563eb', icon: 'solar:settings-minimalistic-linear' },
-  general:   { label: 'Brief',     color: 'rgba(0,0,0,0.08)', ic: 'rgba(0,0,0,0.4)', icon: 'solar:notes-linear' },
-}
-
-const STAGE_LABEL_KEYS: Record<string, StringKey> = {
-  judge:      'stage_judge',
-  implement:  'stage_implement',
-  verify:     'stage_verify',
-  open_pr:    'stage_open_pr',
-}
-
-// ── Chat View ─────────────────────────────────────────────────────────────────
-interface ChatMessage {
-  role: 'user' | 'ai'
-  text?: string
-  stage?: string        // for stage_start events
-  isDone?: boolean
-  isError?: boolean
-  output?: string
-  liveText?: string     // accumulated streaming chunks (not yet committed)
-  conversationId?: string
-  document?: { id: string; type?: string; title?: string; versionNo?: number; previewUrl?: string | null }
-}
-
-interface Turn {
-  user: string
-  messageId?: number
-  attachments: Attachment[]
-  aiMessages: ChatMessage[]
-}
-
-function usePipelineStream(conversationId: string | null, regenNonce: number, autoRun: boolean, regenerateRef: { current: boolean }, onDone?: (output: string) => void, onSettled?: () => void) {
-  const { t: tr } = useLanguage()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [streaming, setStreaming] = useState(false)
-
-  useEffect(() => {
-    if (!conversationId) return
-    // Don't auto-generate when opening existing conversation from history (regenNonce=0 and autoRun=false)
-    if (!autoRun && regenNonce === 0) return
-    setMessages([])
-    setStreaming(true)
-
-    const ctrl = new AbortController()
-    let disposed = false
-
-    // Trigger generate FIRST so inFlight is set before stream connects.
-    // Stream checks inFlight on connect — if empty it closes immediately.
-    generateConversation(conversationId, { regenerate: regenerateRef.current }).catch(() => {})
-
-    const parseEvent = (line: string): { type: string; stage?: string; text?: string; document?: { id: string; type?: string; title?: string; versionNo?: number; previewUrl?: string | null }; conversation?: { output?: string | null } } | null => {
-      try {
-        const ev = JSON.parse(line.replace(/^data: /, '').trim()) as { type: string; stage?: string; text?: string; document?: { id: string; type?: string; title?: string; versionNo?: number; previewUrl?: string | null }; conversation?: { output?: string | null } }
-        return ev.type ? ev : null
-      } catch {
-        return null
-      }
-    }
-
-    const handleEvent = (ev: { type: string; stage?: string; text?: string; document?: { id: string; type?: string; title?: string; versionNo?: number; previewUrl?: string | null }; conversation?: { output?: string | null } }): 'continue' | 'done' => {
-      if (ev.type === 'stage_start' && ev.stage) {
-        setMessages(m => [...m, { role: 'ai', stage: ev.stage }])
-        return 'continue'
-      }
-      if (ev.type === 'output_chunk' && ev.text) {
-        setMessages(m => {
-          const last = m[m.length - 1]
-          if (last && last.role === 'ai' && !last.isDone && !last.isError) {
-            return [...m.slice(0, -1), { ...last, liveText: (last.liveText ?? '') + ev.text }]
-          }
-          return [...m, { role: 'ai', liveText: ev.text }]
-        })
-        return 'continue'
-      }
-      if (ev.type === 'done') {
-        const output = ev.text ?? ''
-        if (output) {
-          // Replace any in-progress live bubble with the final committed bubble.
-          setMessages(m => {
-            const withoutLive = m.filter(msg => msg.isDone || msg.isError || msg.role === 'user')
-            return [...withoutLive, { role: 'ai', isDone: true, output, document: ev.document }]
-          })
-          setStreaming(false)
-          onDone?.(output)
-        } else {
-          // "done" without text: the stream reconnected after generation
-          // finished (or this is the connect-time "already done" probe). Don't
-          // append an empty bubble — reload from DB so the result renders.
-          setStreaming(false)
-          onSettled?.()
-        }
-        return 'done'
-      }
-      if (ev.type === 'error') {
-        const raw = ev.text ?? ''
-        const errText = raw === 'prototype quota reached'
-          ? tr('prototype_quota_reached')
-          : raw === 'monthly quota reached'
-            ? tr('plan_limit_desc')
-            : raw || tr('pipeline_error')
-        setMessages(m => [...m, { role: 'ai', isError: true, text: errText }])
-        setStreaming(false)
-        return 'done'
-      }
-      return 'continue'
-    }
-
-    // Reconnect with exponential backoff when the stream drops without a
-    // terminal event. Prototype generation can take 10+ minutes; proxies kill
-    // idle SSE connections long before that, so a single fetch is not enough.
-    const connect = (attempt: number) => {
-      if (disposed) return
-      fetch(apiUrl(`/api/conversations/${conversationId}/stream`), { credentials: 'include', signal: ctrl.signal })
-        .then(async res => {
-          const reader = res.body!.getReader()
-          const dec = new TextDecoder()
-          let buf = ''
-          try {
-            while (true) {
-              const { value, done } = await reader.read()
-              if (done) break
-              buf += dec.decode(value, { stream: true })
-              const parts = buf.split('\n\n')
-              buf = parts.pop() ?? ''
-              for (const part of parts) {
-                const line = part.replace(/^data: /, '').trim()
-                if (!line || line.startsWith(':')) continue // skip heartbeats/comments
-                const ev = parseEvent(line)
-                if (!ev) continue
-                if (handleEvent(ev) === 'done') return
-              }
-            }
-            // Stream ended without a terminal event → reconnect with backoff.
-            if (!disposed) {
-              const delay = Math.min(8000, 500 * 2 ** attempt)
-              setTimeout(() => connect(attempt + 1), delay)
-            }
-          } catch {
-            // fetch/read error (network, proxy reset) → reconnect with backoff.
-            if (!disposed) {
-              const delay = Math.min(8000, 500 * 2 ** attempt)
-              setTimeout(() => connect(attempt + 1), delay)
-            }
-          }
-        })
-        .catch(() => {
-          if (!disposed) {
-            const delay = Math.min(8000, 500 * 2 ** attempt)
-            setTimeout(() => connect(attempt + 1), delay)
-          }
-        })
-    }
-
-    // Small delay so inFlight is registered before stream connects.
-    const firstConnect = setTimeout(() => connect(0), 100)
-
-    return () => {
-      disposed = true
-      clearTimeout(firstConnect)
-      ctrl.abort()
-    }
-  }, [conversationId, regenNonce])
-
-  return { messages, streaming }
-}
-
-function AiMessageActions({ output, conversationId, onRegenerate }: { output: string; conversationId: string; onRegenerate: () => void }) {
-  const [copied, setCopied] = useState(false)
-  const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null)
-
-  const handleCopy = () => {
-    void navigator.clipboard.writeText(output).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
-
-  const sendFeedback = (value: 'like' | 'dislike') => {
-    const next = feedback === value ? null : value
-    setFeedback(next)
-    fetch(apiUrl(`/api/conversations/${conversationId}`), {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ feedback: next }),
-    }).catch(() => {})
-  }
-
-  const btnClass = "p-1.5 rounded-md transition-colors hover:bg-black/5"
-  const iconColor = 'rgba(0,0,0,0.35)'
-  const activeColor = '#3b82f6'
-
-  return (
-    <div className="flex items-center gap-0.5">
-      <button onClick={handleCopy} className={btnClass} title="Copy">
-        <iconify-icon icon={copied ? 'solar:check-circle-linear' : 'solar:copy-linear'} width="14" style={{ color: copied ? activeColor : iconColor }} />
-      </button>
-      <button onClick={() => sendFeedback('like')} className={btnClass} title="Like">
-        <iconify-icon icon="solar:like-linear" width="14" style={{ color: feedback === 'like' ? activeColor : iconColor }} />
-      </button>
-      <button onClick={() => sendFeedback('dislike')} className={btnClass} title="Dislike">
-        <iconify-icon icon="solar:dislike-linear" width="14" style={{ color: feedback === 'dislike' ? activeColor : iconColor }} />
-      </button>
-      <button onClick={onRegenerate} className={btnClass} title="Regenerate">
-        <iconify-icon icon="solar:refresh-linear" width="14" style={{ color: iconColor }} />
-      </button>
-    </div>
-  )
-}
-
-function timeAgo(iso: string, t: (key: StringKey) => string): string {
-  const diffMs = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diffMs / 60000)
-  if (mins < 1) return t('dash_time_just_now')
-  if (mins < 60) return `${mins} ${t('dash_time_minutes_ago')}`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} ${t('dash_time_hours_ago')}`
-  const days = Math.floor(hours / 24)
-  return `${days} ${t('dash_time_days_ago')}`
-}
-
-
-const PLAN_BENEFITS: Record<string, { icon: string; text: string }[]> = {
-  starter: [
-    { icon: 'solar:document-add-linear', text: '5 PRDs / month' },
-    { icon: 'solar:chat-round-linear', text: 'AI chat 100x / month' },
-    { icon: 'solar:download-minimalistic-linear', text: 'Download Markdown' },
-    { icon: 'solar:checklist-linear', text: 'Generate specs & tasks' },
-  ],
-  pro: [
-    { icon: 'solar:document-add-linear', text: 'Unlimited PRDs' },
-    { icon: 'solar:chat-round-linear', text: 'Unlimited AI chat' },
-    { icon: 'solar:download-minimalistic-linear', text: 'Download Markdown' },
-    { icon: 'solar:checklist-linear', text: 'Generate specs & tasks' },
-  ],
-}
-
-function PlanBadge() {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const { data: sub } = useSubscription()
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const plan = sub?.planSlug
-  if (!plan) return null
-  const isPro = plan === 'pro'
-  const benefits = PLAN_BENEFITS[plan] ?? PLAN_BENEFITS.starter
-
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-80"
-        style={{ backgroundColor: '#3b82f6' }}
-      >
-        <iconify-icon icon={isPro ? 'solar:crown-bold' : 'solar:lightning-bold'} width="12" />
-        <span className="hidden sm:inline">{isPro ? 'Pro' : 'Starter'}</span>
-      </button>
-
-      {open && (
-        <div
-          className="absolute top-full mt-2 right-0 rounded-2xl p-4 z-50 w-56"
-          style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: isPro ? '#3b82f6' : 'rgba(0,0,0,0.08)' }}>
-              <iconify-icon icon={isPro ? 'solar:crown-bold' : 'solar:lightning-bold'} width="12" style={{ color: '#fff' }} />
-            </div>
-            <span className="text-sm font-semibold text-white">{isPro ? 'Pro' : 'Starter'}</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {benefits.map((b, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <iconify-icon icon={b.icon} width="13" style={{ color: isPro ? '#3b82f6' : 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
-                <span className="text-xs" style={{ color: '#374151' }}>{b.text}</span>
-              </div>
-            ))}
-          </div>
-          {!isPro && (
-            <a
-              href="/pay?plan=pro"
-              className="w-full mt-4 py-2 rounded-full text-xs font-semibold text-white flex items-center justify-center"
-              style={{ backgroundColor: '#3b82f6' }}
-            >
-              Upgrade to Pro
-            </a>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function fileExtension(filename: string): string {
-  const parts = filename.split('.')
-  return parts.length > 1 ? (parts.pop() ?? '').toUpperCase().slice(0, 4) : 'FILE'
-}
-
-function AttachmentTile({ attachment }: { attachment: Attachment }) {
-  const isImage = attachment.mimeType?.startsWith('image/')
-  const ext = fileExtension(attachment.filename)
-  return (
-    <a
-      href={attachment.url}
-      target="_blank"
-      rel="noreferrer"
-      title={attachment.filename}
-      className="relative w-20 h-20 rounded-lg overflow-hidden border group shrink-0"
-      style={{ borderColor: 'rgba(0,0,0,0.1)', backgroundColor: '#ffffff' }}
-    >
-      {isImage ? (
-        <img src={attachment.url} alt={attachment.filename} className="w-full h-full object-cover" />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M4 7h16M4 12h12M4 17h8" stroke="rgba(0,0,0,0.25)" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </div>
-      )}
-      <span
-        className="absolute bottom-1 right-1 text-[8px] font-bold px-1 py-0.5 rounded"
-        style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#ffffff' }}
-      >
-        {ext}
-      </span>
-    </a>
-  )
-}
-
-function ChatView({
-  initialPrompt,
-  conversationId,
-  createdAt,
-  autoRun,
-  onPromptUpdate,
-  onOpenDocument,
-}: {
-  initialPrompt: string
-  conversationId: string
-  createdAt: string
-  autoRun: boolean
-  onPromptUpdate: (text: string) => void
-  onOpenDocument: (id: string) => void
-}) {
-  const { t: tr } = useLanguage()
-  const [regenNonce, setRegenNonce] = useState(0)
-  const regenerateRef = useRef(false)
-  // turns = committed past exchanges; liveMessages = current stream in progress
-  const [turns, setTurns] = useState<Turn[]>([
-    { user: initialPrompt, attachments: [], aiMessages: [] }
-  ])
-
-  const [isReloading, setIsReloading] = useState(false)
-  const [chatError, setChatError] = useState<string | null>(null)
-
-  // Reconstruct committed turns from the DB history.
-  // Key used to persist last AI output across page refreshes (sessionStorage survives F5, not tab close)
-  const lastOutputKey = `spectr_last_output_${conversationId}`
-
-  const reloadTurns = useCallback(() => {
-    if (!conversationId) return Promise.resolve()
-    return getMessages(conversationId)
-      .then((msgs) => {
-        if (!msgs.length) return
-        const reconstructed: Turn[] = []
-        let currentUser = ''
-        let currentMessageId: number | undefined
-        let currentAttachments: Attachment[] = []
-        let currentAi: ChatMessage[] = []
-        for (const m of msgs) {
-          if (m.role === 'user') {
-            if (currentUser) {
-              reconstructed.push({ user: currentUser, messageId: currentMessageId, attachments: currentAttachments, aiMessages: currentAi })
-            }
-            currentUser = m.content
-            currentMessageId = m.id
-            currentAttachments = m.attachments ?? []
-            currentAi = []
-          } else if (m.role === 'assistant') {
-            const docMeta = m.document
-              ? { id: m.document.id, type: m.document.type, title: m.document.title, commitSha: m.document.commitSha ?? null }
-              : m.documentId
-                ? { id: m.documentId }
-                : undefined
-            currentAi.push({ role: 'ai', isDone: true, output: m.content, document: docMeta })
-          }
-        }
-        if (currentUser) {
-          reconstructed.push({ user: currentUser, messageId: currentMessageId, attachments: currentAttachments, aiMessages: currentAi })
-        }
-        if (reconstructed.length > 0) {
-          // If last turn has no AI response yet, check sessionStorage for a cached output
-          // (handles case where user refreshed before DB write completed)
-          const last = reconstructed[reconstructed.length - 1]
-          if (last && last.aiMessages.length === 0) {
-            const cached = sessionStorage.getItem(lastOutputKey)
-            if (cached) {
-              reconstructed[reconstructed.length - 1] = {
-                ...last,
-                aiMessages: [{ role: 'ai', isDone: true, output: cached }],
-              }
-            }
-          } else {
-            // DB has AI response — no need for cached fallback
-            sessionStorage.removeItem(lastOutputKey)
-          }
-          setTurns(reconstructed)
-        }
-      })
-      .catch(() => {})
-  }, [conversationId, lastOutputKey])
-
-  const { messages: liveMessages, streaming } = usePipelineStream(conversationId, regenNonce, autoRun, regenerateRef, (output) => {
-    updateLocalConversation(conversationId, { content: output, status: 'done' })
-    // Persist last output to sessionStorage so refresh doesn't lose it
-    sessionStorage.setItem(lastOutputKey, output)
-    // Immediately commit AI output to turns in-memory so refresh doesn't lose it,
-    // then reload from DB for proper doc metadata.
-    setTurns(prev => {
-      const last = prev[prev.length - 1]
-      if (!last) return prev
-      const alreadyHasOutput = last.aiMessages.some(m => m.isDone && m.output === output)
-      if (alreadyHasOutput) return prev
-      return [
-        ...prev.slice(0, -1),
-        { ...last, aiMessages: [...last.aiMessages.filter(m => !m.isDone || m.output), { role: 'ai' as const, isDone: true, output }] }
-      ]
-    })
-    void reloadTurns()
-  }, () => {
-    setIsReloading(true)
-    void reloadTurns()?.finally(() => {
-      setIsReloading(false)
-      // If settled without output (silent fail), check last turn — if AI side is still empty, show error
-      setTurns(prev => {
-        const last = prev[prev.length - 1]
-        if (last && last.aiMessages.length === 0) {
-          setChatError(tr('pipeline_error'))
-        }
-        return prev
-      })
-    })
-  })
-  const [followUp, setFollowUp] = useState('')
-  const [attachments, setAttachments] = useState<AttachedFile[]>([])
-  const [editingTurnIndex, setEditingTurnIndex] = useState<number | null>(null)
-  const [editValue, setEditValue] = useState('')
-  const [copied, setCopied] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    Array.from(e.target.files ?? []).forEach(file => {
-      const reader = new FileReader()
-      reader.onload = () => setAttachments(p => [...p, { name: file.name, type: file.type, dataUrl: reader.result as string }])
-      reader.readAsDataURL(file)
-    })
-    e.target.value = ''
-  }, [])
-
-  const addFiles = useCallback((files: FileList | File[]) => {
-    Array.from(files).forEach(file => {
-      const reader = new FileReader()
-      reader.onload = () => setAttachments(p => [...p, { name: file.name, type: file.type, dataUrl: reader.result as string }])
-      reader.readAsDataURL(file)
-    })
-  }, [])
-
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const imgs = Array.from(e.clipboardData.items)
-      .filter(i => i.kind === 'file' && i.type.startsWith('image/'))
-      .map(i => i.getAsFile()).filter((f): f is File => f !== null)
-    if (imgs.length > 0) addFiles(imgs)
-  }, [addFiles])
-
-  const [isDragging, setIsDragging] = useState(false)
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (Array.from(e.dataTransfer.items).some(i => i.kind === 'file')) { e.preventDefault(); setIsDragging(true) }
-  }, [])
-  const handleDragLeave = useCallback(() => setIsDragging(false), [])
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); setIsDragging(false)
-    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files)
-  }, [addFiles])
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [liveMessages, streaming])
-
-  // Load saved messages when opening a conversation.
-  useEffect(() => { reloadTurns() }, [reloadTurns])
-
-  const handleRefreshResponse = () => {
-    if (streaming) return
-    regenerateRef.current = true
-    setRegenNonce(n => n + 1)
-  }
-
-  const handleStartEdit = (index: number) => {
-    setEditValue(turns[index].user)
-    setEditingTurnIndex(index)
-  }
-
-  const handleSaveEdit = (index: number) => {
-    const text = editValue.trim()
-    setEditingTurnIndex(null)
-    if (!text || text === turns[index].user) return
-    const messageId = turns[index].messageId
-    if (messageId) {
-      updateMessage(conversationId, messageId, text).catch(() => {})
-    }
-    if (index === 0) {
-      onPromptUpdate(text)
-      updateConversationApi(conversationId, { title: text, prompt: text }).catch(() => {})
-    }
-    setTurns(prev => prev.map((t, i) => i === index ? { ...t, user: text } : t))
-    regenerateRef.current = true
-    setRegenNonce(n => n + 1)
-  }
-
-  const handleCopyPrompt = () => {
-    void navigator.clipboard.writeText(initialPrompt)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
-  const handleSend = async () => {
-    if (!followUp.trim() || streaming) return
-    setChatError(null)
-    try {
-      const uploaded: Attachment[] = []
-      for (const a of attachments) {
-        try {
-          uploaded.push(await uploadAttachment(dataUrlToBlob(a.dataUrl), a.name, conversationId))
-        } catch {
-          /* skip failed upload — keep the message text */
-        }
-      }
-      const text = followUp.trim()
-      // Capture liveMessages synchronously before any state update resets them
-      const committedLive = liveMessages.slice()
-      const message = await createMessage(conversationId, {
-        content: text,
-        attachmentIds: uploaded.map(a => a.id),
-      })
-      setFollowUp('')
-      setAttachments([])
-      if (textareaRef.current) textareaRef.current.style.height = 'auto'
-
-      // Commit current live messages into the previous turn, then start a new one.
-      setTurns(prev => {
-        const last = prev[prev.length - 1]
-        return [
-          ...prev.slice(0, -1),
-          { ...last, aiMessages: committedLive.length > 0 ? committedLive : last.aiMessages },
-          { user: message.content, attachments: message.attachments, aiMessages: [] },
-        ]
-      })
-
-      regenerateRef.current = false
-      setRegenNonce(n => n + 1)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
-      if (msg === 'chat quota reached') setChatError(tr('chat_quota_reached'))
-      else if (msg === 'active subscription required') setChatError(tr('dash_expired_error'))
-      else setChatError(tr('dash_generic_error'))
-    }
-  }
-
-  return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: '#f8fafc', fontFamily: inter }}>
-      {/* Thread */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar">
-        <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-8">
-
-          {/* Render all turns (committed) then live stream for the last one */}
-          {turns.map((turn, ti) => {
-            const isLast = ti === turns.length - 1
-            const msgs = isLast && liveMessages.length > 0 ? liveMessages : turn.aiMessages
-            return (
-              <div key={ti} className="flex flex-col gap-8">
-                {/* Attachments + user bubble */}
-                <div className="flex flex-col items-end gap-2">
-                  {turn.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      {turn.attachments.map(a => <AttachmentTile key={a.id} attachment={a} />)}
-                    </div>
-                  )}
-                  <div className={`${editingTurnIndex === ti ? 'w-full' : 'max-w-[75%]'} flex flex-col items-end gap-1.5 group`}>
-                    {editingTurnIndex === ti ? (
-                      <div className="w-full rounded-2xl px-5 py-3" style={{ backgroundColor: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.1)' }}>
-                        <textarea
-                          autoFocus
-                          value={editValue}
-                          onChange={e => setEditValue(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSaveEdit(ti) }
-                            if (e.key === 'Escape') setEditingTurnIndex(null)
-                          }}
-                          rows={Math.max(3, Math.min(10, editValue.split('\n').length + 1))}
-                          className="w-full resize-none bg-transparent outline-none text-sm leading-relaxed"
-                          style={{ color: '#ffffff' }}
-                        />
-                        <div className="flex items-center justify-end gap-2 mt-2">
-                          <button onClick={() => setEditingTurnIndex(null)} className="text-xs px-3 py-1.5 rounded-lg transition-colors" style={{ color: 'rgba(0,0,0,0.4)' }}>
-                            Cancel
-                          </button>
-                          <button onClick={() => handleSaveEdit(ti)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-white transition-colors" style={{ backgroundColor: '#3b82f6' }}>
-                            {tr('dash_save_resend')}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="px-5 py-3 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap" style={{ backgroundColor: '#1e40af', color: '#ffffff' }}>
-                        {turn.user}
-                      </div>
-                    )}
-                    {editingTurnIndex !== ti && (
-                      <div className="flex items-center gap-2 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-xs" style={{ color: 'rgba(0,0,0,0.35)' }}>{timeAgo(createdAt, tr)}</span>
-                        {isLast && (
-                          <button onClick={handleRefreshResponse} disabled={streaming}
-                            className="p-1 rounded-md hover:bg-black/5 transition-colors disabled:opacity-30" title="Refresh respond">
-                            <iconify-icon icon="solar:refresh-linear" width="14" style={{ color: 'rgba(0,0,0,0.4)' }} />
-                          </button>
-                        )}
-                        <button onClick={() => handleStartEdit(ti)} className="p-1 rounded-md hover:bg-black/5 transition-colors" title="Edit">
-                          <iconify-icon icon="solar:pen-2-linear" width="14" style={{ color: 'rgba(0,0,0,0.4)' }} />
-                        </button>
-                        <button onClick={handleCopyPrompt} className="p-1 rounded-md hover:bg-black/5 transition-colors" title="Copy">
-                          <iconify-icon icon={copied ? 'solar:check-circle-linear' : 'solar:copy-linear'} width="14" style={{ color: 'rgba(0,0,0,0.4)' }} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* AI messages for this turn */}
-                {msgs.map((m, i) => {
-                  if (m.isDone && m.output && m.document) return (
-                    <div key={i} className="group relative flex flex-col gap-3">
-                      {m.document.type !== 'prototype' && (
-                        <div className="text-sm spectr-output" style={{ color: 'rgba(0,0,0,0.8)', lineHeight: '1.85' }}
-                          dangerouslySetInnerHTML={{ __html: marked.parse(m.output.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/\[Buka prototype\]\([^)]+\)/g, '').trim()) as string }} />
-                      )}
-                      {m.document.type === 'prototype' && (
-                        <p className="text-sm" style={{ color: 'rgba(0,0,0,0.65)', lineHeight: '1.7' }}>
-                          Prototype lo udah siap! Klik kartu di bawah untuk buka preview langsung di browser, atau minta revisi kalau ada yang perlu diubah.
-                        </p>
-                      )}
-                      <DocumentCard
-                        documentId={m.document.id}
-                        initial={m.document}
-                        onClick={() => {
-                          if (m.document!.type === 'prototype') {
-                            const url = m.document!.previewUrl ?? apiUrl(`/p/${m.document!.id}/`)
-                            window.open(url, '_blank')
-                          } else {
-                            onOpenDocument(m.document!.id)
-                          }
-                        }}
-                      />
-                      {/* Spectr logo + hover actions */}
-                      <div className="flex items-center gap-3 mt-3">
-                        <div className="flex items-center gap-1.5" style={{ color: 'rgba(0,0,0,0.25)' }}>
-                          <img src="/logo.png" alt="Spectr" className="h-4 w-auto" style={{ opacity: 0.35, filter: 'brightness(0)' }} />
-                        </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <AiMessageActions output={m.output} conversationId={conversationId} onRegenerate={handleRefreshResponse} />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                  // Skip stale raw prototype generation outputs saved by older pipeline versions
-                  if (m.isDone && m.output && !m.document && /Step\s+1[:\s]|cat\s*>\s*\/app\/prototype|CSSEOF|<< 'EOF'/.test(m.output)) return null
-                  // For raw HTML prototype outputs without a document card, show a simple placeholder
-                  if (m.isDone && m.output && !m.document && /<!DOCTYPE html/i.test(m.output)) return (
-                    <div key={i} className="text-sm" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                      Prototype berhasil dibuat. Buka panel Documents untuk melihat hasilnya.
-                    </div>
-                  )
-                  if (m.isDone && m.output) return (
-                    <div key={i} className="group relative">
-                      <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      </div>
-                      <div className="text-sm break-words overflow-x-hidden spectr-output" style={{ color: 'rgba(0,0,0,0.8)', lineHeight: '1.85' }}
-                        dangerouslySetInnerHTML={{ __html: marked.parse(m.output.replace(/<think>[\s\S]*?<\/think>/g, '').trim()) as string }} />
-                      {/* Spectr logo + hover actions */}
-                      <div className="flex items-center gap-3 mt-3">
-                        <div className="flex items-center gap-1.5" style={{ color: 'rgba(0,0,0,0.25)' }}>
-                          <img src="/logo.png" alt="Spectr" className="h-4 w-auto" style={{ opacity: 0.35, filter: 'brightness(0)' }} />
-                        </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <AiMessageActions output={m.output} conversationId={conversationId} onRegenerate={handleRefreshResponse} />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                  if (m.isError) return (
-                    <div key={i} className="text-sm break-words" style={{ color: '#f87171' }}>{m.text}</div>
-                  )
-                  return null
-                })}
-
-                {/* Loading state — bouncing dots until first chunk, then live text */}
-                {isLast && (streaming || isReloading) && !liveMessages.some(m => m.liveText) && !msgs.some(m => m.isDone || m.isError) && (() => {
-                  const liveMsg = [...msgs].reverse().find(m => m.liveText)
-                  const stageMsg = msgs.filter(m => m.stage).slice(-1)[0]
-                  return (
-                    <div className="flex flex-col gap-2">
-                      {stageMsg && !liveMsg && (
-                        <p className="text-xs" style={{ color: 'rgba(0,0,0,0.4)' }}>
-                          {stageMsg.stage! in STAGE_LABEL_KEYS ? tr(STAGE_LABEL_KEYS[stageMsg.stage!]) : stageMsg.stage}
-                        </p>
-                      )}
-                      {liveMsg ? (
-                        <div className="text-sm break-words overflow-x-hidden spectr-output stream-live" style={{ color: 'rgba(0,0,0,0.8)', lineHeight: '1.85' }}
-                          dangerouslySetInnerHTML={{ __html: (marked.parse((liveMsg.liveText ?? '').replace(/<think>[\s\S]*?<\/think>/g, '').trim()) as string) + '<span class="stream-cursor"></span>' }} />
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(0,0,0,0.25)', animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(0,0,0,0.25)', animationDelay: '150ms' }} />
-                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(0,0,0,0.25)', animationDelay: '300ms' }} />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
-              </div>
-            )
-          })}
-
-          <div ref={bottomRef} />
-        </div>
-      </div>
-
-      {/* Input — Claude style floating */}
-      <div className="shrink-0 px-6 pb-6 pt-3">
-        <div
-          className="max-w-3xl mx-auto rounded-2xl transition-colors"
-          style={{ backgroundColor: '#ffffff', border: isDragging ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.08)' }}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          {isDragging && (
-            <div className="flex items-center justify-center gap-2 px-5 pt-4 pb-1 text-sm" style={{ color: '#3b82f6' }}>
-              <iconify-icon icon="solar:upload-linear" width="16" />
-              Drop to attach
-            </div>
-          )}
-          {chatError && (
-            <p className="px-5 pt-3 text-xs" style={{ color: '#3b82f6' }}>{chatError}</p>
-          )}
-          <textarea
-            ref={textareaRef}
-            value={followUp}
-            onChange={e => {
-              setFollowUp(e.target.value)
-              e.target.style.height = 'auto'
-              e.target.style.height = Math.min(e.target.scrollHeight, 180) + 'px'
-            }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); handleSend() }
-            }}
-            onPaste={handlePaste}
-            placeholder="Write a message..."
-            rows={2}
-            disabled={streaming}
-            className="w-full resize-none bg-transparent outline-none px-5 pt-5 pb-2"
-            style={{ color: '#111827', fontSize: '15px', minHeight: '70px', maxHeight: '180px', lineHeight: '1.6' }}
-          />
-
-          {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-4 pb-2">
-              {attachments.map((a, i) => (
-                <div key={i} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }}>
-                  {a.type.startsWith('image/') ? <img src={a.dataUrl} className="w-4 h-4 rounded object-cover" alt="" /> : <iconify-icon icon="solar:document-linear" width="12" />}
-                  <span className="max-w-[100px] truncate">{a.name}</span>
-                  <button onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} className="opacity-40 hover:opacity-100" aria-label="Remove attachment">
-                    <iconify-icon icon="solar:close-circle-bold" width="12" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-center gap-1 px-4 pb-4 pt-1">
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
-            <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-            <button onClick={() => imageInputRef.current?.click()} aria-label="Attach image" className="p-1.5 rounded-lg transition-colors" style={{ color: 'rgba(0,0,0,0.4)' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-              <iconify-icon icon="solar:gallery-linear" width="18" />
-            </button>
-            <button onClick={() => fileInputRef.current?.click()} aria-label="Attach file" className="p-1.5 rounded-lg transition-colors" style={{ color: 'rgba(0,0,0,0.4)' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-              <iconify-icon icon="solar:paperclip-linear" width="18" />
-            </button>
-            <span className="text-xs ml-1" style={{ color: 'rgba(0,0,0,0.3)' }}>↵ send</span>
-            <div className="flex-1" />
-            <button
-              onClick={handleSend}
-              disabled={streaming || !followUp.trim()}
-              aria-label="Send message"
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-25 active:scale-95 ml-2"
-              style={{ backgroundColor: '#3b82f6' }}
-            >
-              <iconify-icon icon="solar:arrow-up-linear" width="14" style={{ color: '#ffffff' }} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-// ── Plan limit (server-side) ────────────────────────────────────────────────
-interface PlanUsage { used: number; prototypeUsed: number; chatUsed: number; limit: number | null; prototypeLimit: number | null; chatLimit: number | null; isPro: boolean }
-function isAtLimit(u: PlanUsage): boolean {
-  return !u.isPro && u.limit !== null && u.used >= u.limit
-}
-
-// ── Prompt Box (reusable) ──────────────────────────────────────────────────────
-interface PromptBoxProps {
-  defaultType?: ConversationType
-  onSuccess: (t: LocalConversation) => void
-  usage: PlanUsage
-  projectId?: string | null
-  projectTitle?: string | null
-  onClearProject?: () => void
-}
-function loadDraft(): { prompt: string; attachments: AttachedFile[]; activeType: ConversationType | null } {
-  try {
-    const raw = localStorage.getItem('spectr_draft')
-    if (!raw) return { prompt: '', attachments: [], activeType: null }
-    localStorage.removeItem('spectr_draft')
-    const parsed = JSON.parse(raw) as { prompt?: string; attachments?: AttachedFile[]; activeType?: ConversationType }
-    return { prompt: parsed.prompt ?? '', attachments: parsed.attachments ?? [], activeType: parsed.activeType ?? null }
-  } catch {
-    return { prompt: '', attachments: [], activeType: null }
-  }
-}
-
-function PromptBox({ defaultType = 'general', onSuccess, usage, projectId, projectTitle, onClearProject }: PromptBoxProps) {
-  const { lang, t: tr } = useLanguage()
-  const [draft] = useState(loadDraft)
-  const [prompt, setPrompt] = useState(draft.prompt)
-  const [pendingType, setPendingType] = useState<string>(draft.activeType ?? (defaultType === 'general' ? '' : defaultType))
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [attachments, setAttachments] = useState<AttachedFile[]>(draft.attachments)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const atLimit = isAtLimit(usage)
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    Array.from(e.target.files ?? []).forEach(file => {
-      const reader = new FileReader()
-      reader.onload = () => setAttachments(p => [...p, { name: file.name, type: file.type, dataUrl: reader.result as string }])
-      reader.readAsDataURL(file)
-    })
-    e.target.value = ''
-  }, [])
-
-  const addFilesHome = useCallback((files: FileList | File[]) => {
-    Array.from(files).forEach(file => {
-      const reader = new FileReader()
-      reader.onload = () => setAttachments(p => [...p, { name: file.name, type: file.type, dataUrl: reader.result as string }])
-      reader.readAsDataURL(file)
-    })
-  }, [])
-
-  const handlePasteHome = useCallback((e: React.ClipboardEvent) => {
-    const imgs = Array.from(e.clipboardData.items)
-      .filter(i => i.kind === 'file' && i.type.startsWith('image/'))
-      .map(i => i.getAsFile()).filter((f): f is File => f !== null)
-    if (imgs.length > 0) addFilesHome(imgs)
-  }, [addFilesHome])
-
-  const [isDraggingHome, setIsDraggingHome] = useState(false)
-  const handleDragOverHome = useCallback((e: React.DragEvent) => {
-    if (Array.from(e.dataTransfer.items).some(i => i.kind === 'file')) { e.preventDefault(); setIsDraggingHome(true) }
-  }, [])
-  const handleDragLeaveHome = useCallback(() => setIsDraggingHome(false), [])
-  const handleDropHome = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); setIsDraggingHome(false)
-    if (e.dataTransfer.files.length > 0) addFilesHome(e.dataTransfer.files)
-  }, [addFilesHome])
-
-  const handleSubmit = async () => {
-    if (!prompt.trim()) return
-    if (atLimit) return
-    setIsSubmitting(true)
-    setError(null)
-    try {
-      const local = await createConversationLocal({ type: 'general', pendingType: pendingType || undefined, summary: prompt.trim(), description: prompt.trim(), projectId: projectId ?? undefined })
-      const uploaded: Attachment[] = []
-      for (const a of attachments) {
-        try {
-          uploaded.push(await uploadAttachment(dataUrlToBlob(a.dataUrl), a.name, local.id))
-        } catch {
-          /* skip failed upload */
-        }
-      }
-      await createMessage(local.id, { content: prompt.trim(), attachmentIds: uploaded.map(a => a.id) })
-      setPrompt('')
-      setAttachments([])
-      onSuccess(local)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
-      if (msg === 'active subscription required') setError(tr('dash_expired_error'))
-      else if (msg === 'monthly quota reached') setError(tr('plan_limit_desc'))
-      else if (msg === 'prototype quota reached') setError(tr('prototype_quota_reached'))
-      else if (msg === 'project not found') { setError(tr('dash_project_gone')); onClearProject?.() }
-      else setError(msg || tr('dash_generic_error'))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const suggestions = lang === 'id'
-    ? [
-        { icon: 'solar:document-text-linear', text: 'Buatkan PRD untuk fitur baru produk gue' },
-        { icon: 'solar:pen-new-square-linear', text: 'Tulis creative brief untuk kampanye marketing' },
-        { icon: 'solar:smartphone-linear', text: 'Rancang user flow untuk aplikasi mobile' },
-      ]
-    : [
-        { icon: 'solar:document-text-linear', text: 'Write a PRD for my new product feature' },
-        { icon: 'solar:pen-new-square-linear', text: 'Create a creative brief for a marketing campaign' },
-        { icon: 'solar:smartphone-linear', text: 'Design a user flow for a mobile app' },
-      ]
-
-  return (
-    <div className="w-full">
-      <style>{`
-        @keyframes streamFadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        .stream-live { animation: streamFadeIn 0.15s ease-out; }
-        .stream-cursor { display: inline-block; width: 2px; height: 1em; background: currentColor; margin-left: 1px; vertical-align: text-bottom; animation: cursorBlink 0.7s step-end infinite; }
-      `}</style>
-      {/* Main input card */}
-      <div
-        className="rounded-2xl transition-colors"
-        style={{ backgroundColor: '#ffffff', border: isDraggingHome ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
-        onDragOver={handleDragOverHome}
-        onDragLeave={handleDragLeaveHome}
-        onDrop={handleDropHome}
-      >
-        {projectId && projectTitle && (
-          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-t-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-            <p className="text-xs truncate" style={{ color: '#6b7280' }}>
-              {tr('dash_new_chat_in')} <span style={{ color: '#111827', fontWeight: 600 }}>{projectTitle}</span>
-            </p>
-          </div>
-        )}
-        {atLimit && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-t-2xl" style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderBottom: '1px solid rgba(59,130,246,0.15)' }}>
-            <div>
-              <p className="text-xs font-semibold" style={{ color: '#1e40af' }}>{tr('plan_limit_title')}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>{tr('plan_limit_desc')}</p>
-            </div>
-            <a href="/pay?plan=pro" className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold text-white whitespace-nowrap" style={{ backgroundColor: '#3b82f6' }}>
-              {tr('plan_limit_upgrade')}
-            </a>
-          </div>
-        )}
-
-        {/* Textarea */}
-        <textarea
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          onKeyDown={e => { if (!atLimit && e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); void handleSubmit() } }}
-          onPaste={handlePasteHome}
-          placeholder={lang === 'id' ? 'Tanyakan sesuatu...' : 'Ask me anything...'}
-          disabled={atLimit}
-          className="w-full resize-none bg-transparent text-sm outline-none px-5 pt-5 pb-3 leading-relaxed text-gray-800 placeholder:text-black/30 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ minHeight: '68px' }}
-        />
-
-        {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 px-5 pb-3">
-            {attachments.map((a, i) => (
-              <div key={i} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }}>
-                {a.type.startsWith('image/') ? <img src={a.dataUrl} className="w-4 h-4 rounded object-cover" alt="" /> : <iconify-icon icon="solar:document-linear" width="12" />}
-                <span className="max-w-[100px] truncate">{a.name}</span>
-                <button onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} className="opacity-40 hover:opacity-100" aria-label="Remove attachment">
-                  <iconify-icon icon="solar:close-circle-bold" width="12" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {error && <p className="px-5 pb-2 text-xs" style={{ color: '#ef4444' }}>{error}</p>}
-
-        {/* Bottom toolbar */}
-        <div className="flex items-center gap-2 px-4 pb-4">
-          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
-          <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-          <button onClick={() => fileInputRef.current?.click()} aria-label="Attach file"
-            className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors"
-            style={{ borderColor: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.5)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-            <iconify-icon icon="solar:folder-with-files-linear" width="16" />
-          </button>
-
-          <div className="flex-1" />
-
-          <DeliverableTypeSelect value={pendingType} onChange={setPendingType} />
-
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={isSubmitting || !prompt.trim() || atLimit}
-            aria-label="Send"
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-30 active:scale-95"
-            style={{ backgroundColor: prompt.trim() && !atLimit ? '#3b82f6' : 'rgba(0,0,0,0.08)' }}
-          >
-            <iconify-icon icon={isSubmitting ? 'solar:refresh-linear' : 'solar:arrow-up-linear'} width="14" style={{ color: prompt.trim() && !atLimit ? '#ffffff' : 'rgba(0,0,0,0.4)' }} />
-          </button>
-        </div>
-      </div>
-
-      {/* Suggestion rows */}
-      <div className="mt-4 flex flex-col gap-1">
-        {suggestions.map(s => (
-          <button key={s.text} onClick={() => setPrompt(s.text)}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-left transition-colors w-full"
-            style={{ color: '#374151' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-            <iconify-icon icon={s.icon} width="16" style={{ color: 'rgba(0,0,0,0.35)', flexShrink: 0 }} />
-            {s.text}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Conversation List ────────────────────────────────────────────────────────────────
-function ConversationList({ conversations, onOpen, onNew }: { conversations: LocalConversation[]; onOpen: (t: LocalConversation) => void; onNew: () => void }) {
-  const { lang, t: tr } = useLanguage()
-  if (conversations.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border" style={{ borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#ffffff' }}>
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-          <iconify-icon icon="solar:notes-linear" width="22" style={{ color: 'rgba(0,0,0,0.3)' }} />
-        </div>
-        <p className="text-sm font-medium" style={{ color: '#374151' }}>{tr('dash_no_docs')}</p>
-        <p className="text-xs mt-1 mb-5" style={{ color: '#9ca3af' }}>{tr('dash_no_docs_sub')}</p>
-        <button onClick={onNew} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium" style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}>
-          <iconify-icon icon="solar:add-linear" width="14" />
-          {tr('dash_create_brief')}
-        </button>
-      </div>
-    )
-  }
-  return (
-    <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#ffffff' }}>
-      {conversations.map(t => {
-        const meta = TYPE_META[t.type] ?? TYPE_META.general
-        return (
-          <button key={t.id} onClick={() => onOpen(t)}
-            className="w-full flex items-center justify-between px-5 py-4 text-left border-b last:border-b-0 transition-colors"
-            style={{ borderColor: 'rgba(0,0,0,0.05)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color }}>
-                <iconify-icon icon={meta.icon} width="15" style={{ color: meta.ic }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: '#111827' }}>{t.summary}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>
-                  {new Date(t.createdAt).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0 ml-3">
-              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{
-                backgroundColor: t.status === 'done' ? '#dcfce7' : '#f3f4f6',
-                color: t.status === 'done' ? '#16a34a' : '#9ca3af'
-              }}>{t.status === 'done' ? 'Done' : t.status === 'processing' ? tr('dash_status_processing') : 'Draft'}</span>
-              <iconify-icon icon="solar:arrow-right-linear" width="14" style={{ color: '#d1d5db' }} />
-            </div>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-// ── Home Overview ────────────────────────────────────────────────────────────
-const DAY_LABELS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
-
-function HomeOverview({
-  conversations,
-  username,
-  usage,
-  onSuccess,
-  onOpenConversation,
-  onGoTemplates,
-  onGoBriefs,
-  onGoType,
-  projectId,
-  projectTitle,
-  onClearProject,
-  onUpgrade,
-}: {
-  conversations: LocalConversation[]
-  username: string
-  usage: PlanUsage
-  onSuccess: (t: LocalConversation) => void
-  onOpenConversation: (t: LocalConversation) => void
-  onGoTemplates: () => void
-  onGoBriefs: () => void
-  onGoType: (type: ConversationType) => void
-  projectId?: string | null
-  projectTitle?: string | null
-  onClearProject?: () => void
-  onUpgrade?: () => void
-}) {
-  const { lang, t: tr } = useLanguage()
-  const [filter, setFilter] = useState<'all' | 'done' | 'draft'>('all')
-  const { data: sub } = useSubscription()
-  const plan = sub?.planSlug
-
-  const now = Date.now()
-  const weekMs = 7 * 24 * 60 * 60 * 1000
-  const doneCount = conversations.filter(t => t.status === 'done').length
-  const draftCount = conversations.filter(t => t.status === 'draft').length
-  const weekConversations = conversations.filter(t => now - new Date(t.createdAt).getTime() < weekMs)
-
-  const hour = new Date().getHours()
-  const greetingKey = hour < 11 ? 'home_greeting_morning' : hour < 15 ? 'home_greeting_afternoon' : hour < 19 ? 'home_greeting_evening' : 'home_greeting_night'
-  const dateStr = new Date().toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-
-  const dayBuckets = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now - (6 - i) * 24 * 60 * 60 * 1000)
-    d.setHours(0, 0, 0, 0)
-    const count = conversations.filter(t => {
-      const ct = new Date(t.createdAt); ct.setHours(0, 0, 0, 0)
-      return ct.getTime() === d.getTime()
-    }).length
-    return { label: DAY_LABELS_ID[d.getDay()], count }
-  })
-  const maxDay = Math.max(1, ...dayBuckets.map(d => d.count))
-
-  const filteredConversations = conversations.filter(t => filter === 'all' ? true : filter === 'done' ? t.status === 'done' : t.status === 'draft')
-  const distinctTypes = new Set(conversations.map(t => t.type)).size
-  const checklist = [
-    { key: 'home_check_1', done: conversations.length > 0 },
-    { key: 'home_check_2', done: doneCount > 0 },
-    { key: 'home_check_3', done: distinctTypes >= 3 },
-    { key: 'home_check_5', done: usage.isPro },
-  ] as const
-  const checklistDone = checklist.filter(c => c.done).length
-
-  const cardStyle = { backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }
-  const sectionStyle = { backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }
-
-  return (
-    <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl">
-          {/* Plan badge */}
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-              <iconify-icon icon={usage.isPro ? 'solar:crown-bold' : 'solar:lock-keyhole-bold'} width="13" style={{ color: usage.isPro ? '#f59e0b' : 'rgba(0,0,0,0.4)' }} />
-              <span className="text-sm" style={{ color: 'rgba(0,0,0,0.55)' }}>{usage.isPro ? 'Pro Plan' : 'Starter Plan'}</span>
-              {!usage.isPro && (
-                <button onClick={onUpgrade} className="text-sm font-semibold" style={{ color: '#3b82f6' }}>Upgrade</button>
-              )}
-            </div>
-          </div>
-
-          {/* Heading */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <img src="/logo.png" alt="Spectr" className="w-6 h-6" />
-            </div>
-            <h1 className="text-2xl font-semibold" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>
-              {lang === 'id' ? 'Ada yang bisa gue bantu?' : 'How can I help you today?'}
-            </h1>
-          </div>
-
-          {/* Prompt box */}
-          <PromptBox onSuccess={onSuccess} usage={usage} projectId={projectId} projectTitle={projectTitle} onClearProject={onClearProject} />
-        </div>
-      </div>
-    )
-}
-
-// ── Detail Drawer ──────────────────────────────────────────────────────────────
-function Drawer({ conversation, onClose, onDelete }: { conversation: LocalConversation; onClose: () => void; onDelete: (id: string) => void }) {
-  const meta = TYPE_META[conversation.type] ?? TYPE_META.general
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  return (
-    <div className="fixed inset-0 z-50 flex" onClick={onClose}>
-      <div className="flex-1" />
-      <div className="w-full max-w-lg h-full overflow-y-auto flex flex-col shadow-2xl border-l"
-        style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', fontFamily: inter }}
-        onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0" style={{ borderColor: '#e5e7eb' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: meta.color }}>
-              <iconify-icon icon={meta.icon} width="14" style={{ color: meta.ic }} />
-            </div>
-            <p className="text-sm font-semibold" style={{ color: '#111827' }}>{meta.label}</p>
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{
-              backgroundColor: conversation.status === 'done' ? '#dcfce7' : conversation.status === 'processing' ? '#fef3c7' : '#f3f4f6',
-              color: conversation.status === 'done' ? '#16a34a' : conversation.status === 'processing' ? '#f97316' : '#6b7280'
-            }}>
-              {conversation.status === 'done' ? 'Selesai' : conversation.status === 'processing' ? 'Diproses' : 'Draft'}
-            </span>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-            <iconify-icon icon="solar:close-linear" width="16" style={{ color: '#6b7280' }} />
-          </button>
-        </div>
-        <div className="p-6 flex flex-col gap-4 flex-1">
-          <p className="text-xs" style={{ color: '#9ca3af' }}>
-            {new Date(conversation.createdAt).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}
-          </p>
-          <h2 className="text-base font-semibold leading-snug" style={{ color: '#111827' }}>{conversation.summary}</h2>
-          {conversation.content ? (
-            <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#9ca3af' }}>Output</p>
-              <div className="text-sm leading-relaxed whitespace-pre-wrap rounded-xl p-4" style={{ backgroundColor: '#f9fafb', color: '#374151', border: '1px solid #e5e7eb' }}>
-                {conversation.content}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-xs py-3 px-4 rounded-xl" style={{ backgroundColor: '#f9fafb', color: '#9ca3af' }}>
-              <iconify-icon icon="solar:hourglass-linear" width="14" />
-              Brief dalam antrian — output akan muncul di sini
-            </div>
-          )}
-          {conversation.description && (
-            <p className="text-xs leading-relaxed" style={{ color: '#6b7280' }}>{conversation.description}</p>
-          )}
-          <p className="text-xs font-mono" style={{ color: '#d1d5db' }}>ID: {conversation.id}</p>
-        </div>
-        <div className="px-6 pb-6 flex gap-2 shrink-0">
-          {!confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-red-50"
-              style={{ color: '#ef4444', border: '1px solid #fee2e2' }}>
-              <iconify-icon icon="solar:trash-bin-trash-linear" width="14" />
-              Hapus
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: '#6b7280' }}>Yakin hapus?</span>
-              <button onClick={() => { onDelete(conversation.id); onClose() }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                style={{ backgroundColor: '#ef4444' }}>Hapus</button>
-              <button onClick={() => setConfirmDelete(false)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-100"
-                style={{ color: '#6b7280' }}>Batal</button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Overview Tab ──────────────────────────────────────────────────────────────
-// ── Main ───────────────────────────────────────────────────────────────────────
 export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
+  useAppTheme()
   const { t: tr } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [conversations, setConversations] = useState<LocalConversation[]>([])
-  const [selected, setSelected] = useState<LocalConversation | null>(null)
-  const [activeNav, setActiveNav] = useState('home')
-
+  const [groups, setGroups] = useState<ConversationGroup[]>([])
+  const [activeNav, setActiveNav] = useState<Nav>('home')
   const [chatState, setChatState] = useState<{ prompt: string; conversationId: string; autoRun: boolean } | null>(() => {
     const saved = localStorage.getItem('spectr_last_chat')
     if (!saved) return null
@@ -1357,46 +47,31 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
       return { prompt: parsed.prompt, conversationId: parsed.conversationId, autoRun: parsed.autoRun === true }
     } catch { return null }
   })
-  const [showAccountMenu, setShowAccountMenu] = useState(false)
-  const [activeModal, setActiveModal] = useState<'settings' | 'help' | 'profile' | 'upgrade' | null>(null)
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [showChatMenu, setShowChatMenu] = useState(false)
-  const [renamingTitle, setRenamingTitle] = useState(false)
-  const [renameValue, setRenameValue] = useState('')
-  const [confirmDeleteChat, setConfirmDeleteChat] = useState(false)
+
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768)
-  const [showNotifMenu, setShowNotifMenu] = useState(false)
-  const [showMoreMenu, setShowMoreMenu] = useState(false)
-  const [contextMenuConversation, setContextMenuConversation] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [accountTab, setAccountTab] = useState<AccountTab | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
+  const [shareTarget, setShareTarget] = useState<LocalConversation | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<LocalConversation | null>(null)
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(null)
   const [renamingConversationId, setRenamingConversationId] = useState<string | null>(null)
   const [renameConversationValue, setRenameConversationValue] = useState('')
-  const [groups, setGroups] = useState<ConversationGroup[]>([])
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({})
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
   const [renameProjectValue, setRenameProjectValue] = useState('')
-  const [contextMenuProject, setContextMenuProject] = useState<string | null>(null)
   const [composerProjectId, setComposerProjectId] = useState<string | null>(null)
-  const [documentsProjectId, setDocumentsProjectId] = useState<string | null>(null)
-  const [shareCopied, setShareCopied] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [shareVisibility, setShareVisibility] = useState<'private' | 'shared'>('private')
-  const [openDocumentId, setOpenDocumentId] = useState<string | null>(null)
+  const [openDocument, setOpenDocument] = useState<{ id: string; fromArtifacts: boolean } | null>(null)
+
   const { logout, state: authState } = useAuth()
   const usageQuery = useUsage()
   const usage: PlanUsage = usageQuery.data ?? { used: 0, prototypeUsed: 0, chatUsed: 0, limit: 5, prototypeLimit: 3, chatLimit: 100, isPro: false }
-  const username = authState.status === 'authenticated' ? authState.username : 'sandwich'
-  const email = authState.status === 'authenticated' ? authState.email : username
-
+  const username = authState.status === 'authenticated' ? (authState.username ?? 'sandwich') : 'sandwich'
   const { data: sub, isLoading: subLoading } = useSubscription()
   const queryClient = useQueryClient()
-
-  const sidebarChecklist: { key: StringKey; done: boolean }[] = [
-    { key: 'home_check_1', done: conversations.length > 0 },
-    { key: 'home_check_2', done: conversations.filter(t => t.status === 'done').length > 0 },
-    { key: 'home_check_3', done: new Set(conversations.map(t => t.type)).size >= 3 },
-    { key: 'home_check_5', done: usage.isPro },
-  ]
-  const sidebarChecklistDone = sidebarChecklist.filter(c => c.done).length
+  const isMobile = () => typeof window !== 'undefined' && window.innerWidth < 768
 
   // Fire Snap for a pending Pro upgrade set during registration
   useEffect(() => {
@@ -1413,12 +88,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
           body: JSON.stringify({ planSlug: 'pro' }),
         })
         if (!txRes.ok) return
-        const data = await txRes.json() as {
-          token: string | null
-          simulated: boolean
-          clientKey: string
-          isProduction: boolean
-        }
+        const data = await txRes.json() as { token: string | null; simulated: boolean; clientKey: string; isProduction: boolean }
         if (data.simulated || !data.token) {
           queryClient.invalidateQueries({ queryKey: ['subscription'] })
           return
@@ -1427,40 +97,22 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
           const w = window as unknown as Record<string, unknown>
           if (w.snap) { resolve(); return }
           const script = document.createElement('script')
-          script.src = data.isProduction
-            ? 'https://app.midtrans.com/snap/snap.js'
-            : 'https://app.sandbox.midtrans.com/snap/snap.js'
+          script.src = data.isProduction ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js'
           script.setAttribute('data-client-key', data.clientKey)
           script.onload = () => resolve()
           script.onerror = () => reject(new Error('Snap.js failed to load'))
           document.head.appendChild(script)
         })
         ;(window as unknown as { snap: { pay: (token: string, opts: Record<string, unknown>) => void } }).snap.pay(data.token, {
-          onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['subscription'] }) },
-          onPending: () => { /* user can check status later */ },
-          onError: () => { /* Snap already shows error UI */ },
-          onClose: () => { /* user closed — no action needed, key already cleared */ },
+          onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['subscription'] }); toast.success('Pro plan activated', { description: 'Unlimited documents, prototypes, and AI chat.' }) },
+          onPending: () => { toast.info('Payment pending', { description: "We'll activate Pro as soon as Midtrans confirms." }) },
+          onError: () => { toast.error('Payment failed', { description: "Your payment wasn't completed. You haven't been charged." }) },
+          onClose: () => { /* user closed — key already cleared */ },
         })
-      } catch {
-        /* transient — key already cleared, user can upgrade manually */
-      }
+      } catch { /* transient — key already cleared, user can upgrade manually */ }
     }
-
     void fireSnap()
   }, [queryClient])
-
-  if (!subLoading && sub !== undefined && !sub?.planSlug) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f8fafc' }}>
-        <div className="text-center max-w-sm px-4">
-          <p className="text-sm text-zinc-500 mb-4">No active plan found. Please contact support.</p>
-          <a href="mailto:hello@etalas.com" className="text-sm font-semibold underline" style={{ color: '#3b82f6' }}>
-            hello@etalas.com
-          </a>
-        </div>
-      </div>
-    )
-  }
 
   const refresh = () => {
     setConversations(getConversations())
@@ -1468,173 +120,53 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
   }
 
   useEffect(() => {
-    void loadConversationGroups().then(() => refresh()).catch(() => {
+    void loadConversationGroups().then(() => {
+      refresh()
+      // Baseline: only notifications that arrive after this point raise a toast.
+      seenNotifs.current = new Set(getConversations().filter((t) => t.status === 'done' && t.unread).map((t) => t.id))
+    }).catch(() => {
       // Fall back to the flat list so the sidebar still works.
       void loadConversations().then(setConversations).catch(() => {})
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSuccess = (t: LocalConversation) => {
-    setComposerProjectId(null)
-    usageQuery.invalidate()
-    setChatState({ prompt: t.summary, conversationId: t.id, autoRun: true })
-    // A project-less create minted a fresh project server-side — reload groups.
-    void loadConversationGroups().then(() => refresh()).catch(() => refresh())
-  }
-
-  const handleDelete = (id: string) => {
-    deleteLocalConversation(id)
-    if (chatState?.conversationId === id) setChatState(null)
-    refresh()
-    setSelected(null)
-  }
-
-  // "+ New chat" inside a project — opens the composer carrying that project.
-  // The conversation is created on submit (POST requires a prompt).
-  const startChatInProject = (projectId: string, autoRename = false) => {
-    setComposerProjectId(projectId)
-    setChatState(null)
-    setActiveNav('home')
-    setCollapsedProjects(p => ({ ...p, [projectId]: false }))
-    if (autoRename) {
-      const title = groups.find(g => g.project.id === projectId)?.project.title ?? ''
-      setRenameProjectValue(title)
-      setRenamingProjectId(projectId)
+  // Pick up generations that finish in the background (another tab, or after leaving the chat).
+  useEffect(() => {
+    const poll = () => {
+      if (document.visibilityState === 'visible') void loadConversationGroups().then(() => refresh()).catch(() => {})
     }
-    if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false)
-  }
+    const id = window.setInterval(poll, 20000)
+    document.addEventListener('visibilitychange', poll)
+    return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', poll) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const commitProjectRename = () => {
-    if (renamingProjectId && renameProjectValue.trim()) {
-      renameLocalProject(renamingProjectId, renameProjectValue.trim())
-      refresh()
+  // ⌘K / Ctrl+K opens search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearchOpen((o) => !o) }
     }
-    setRenamingProjectId(null)
-  }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
-  const renderConversationRow = (t: LocalConversation) => {
-    const meta = TYPE_META[t.type] ?? TYPE_META.general
-    const isActive = chatState?.conversationId === t.id
-    const menuOpen = contextMenuConversation === t.id
-    const isRenaming = renamingConversationId === t.id
-    return (
-      <div key={t.id} className="relative group/item mb-0.5">
-        <button
-          onClick={() => {
-            setChatState({ prompt: t.summary, conversationId: t.id, autoRun: false })
-            setActiveNav('home')
-            if (t.unread) updateLocalConversation(t.id, { unread: false })
-            refresh()
-          }}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors"
-          style={{ backgroundColor: isActive || menuOpen ? 'rgba(59,130,246,0.1)' : '' }}
-          onMouseEnter={e => { if (!isActive && !menuOpen) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)' }}
-          onMouseLeave={e => { if (!isActive && !menuOpen) e.currentTarget.style.backgroundColor = '' }}
-        >
-          <div className="w-5 h-5 shrink-0 flex items-center justify-center">
-            <iconify-icon icon={meta.icon} width="15" style={{ color: 'rgba(0,0,0,0.35)' }} />
-          </div>
-          {isRenaming ? (
-            <input
-              autoFocus
-              value={renameConversationValue}
-              onChange={e => setRenameConversationValue(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  updateLocalConversation(t.id, { summary: renameConversationValue }); refresh()
-                  setRenamingConversationId(null)
-                }
-                if (e.key === 'Escape') setRenamingConversationId(null)
-              }}
-              onBlur={() => {
-                if (renameConversationValue.trim()) { updateLocalConversation(t.id, { summary: renameConversationValue }); refresh() }
-                setRenamingConversationId(null)
-              }}
-              onClick={e => e.stopPropagation()}
-              className="flex-1 bg-transparent outline-none text-xs min-w-0"
-              style={{ color: '#111827' }}
-            />
-          ) : (
-            <span className="text-xs truncate flex-1" style={{ color: isActive ? '#1e40af' : t.unread ? '#111827' : 'rgba(0,0,0,0.5)', fontWeight: t.unread ? 600 : 400 }}>{t.summary}</span>
-          )}
-          {t.pinned && !menuOpen && (
-            <iconify-icon icon="solar:pin-bold" width="10" style={{ color: 'rgba(0,0,0,0.3)', flexShrink: 0 }} />
-          )}
-          {t.unread && !menuOpen && (
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#3b82f6' }} />
-          )}
-        </button>
-        <button
-          onClick={e => { e.stopPropagation(); setContextMenuConversation(menuOpen ? null : t.id) }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 md:opacity-0 md:group-hover/item:opacity-100 transition-opacity"
-          style={{ opacity: menuOpen ? 1 : undefined, color: 'rgba(0,0,0,0.4)' }}
-          aria-label="Chat options"
-        >
-          <iconify-icon icon="solar:menu-dots-bold" width="14" />
-        </button>
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setContextMenuConversation(null)} />
-            <div
-              className="absolute right-0 top-full mt-0.5 z-50 rounded-xl py-1 min-w-[160px] shadow-xl"
-              style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)' }}
-              onClick={e => e.stopPropagation()}
-            >
-              <button onClick={() => { updateLocalConversation(t.id, { pinned: !t.pinned }); setContextMenuConversation(null); refresh() }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-black/5 transition-colors"
-                style={{ color: '#111827' }}>
-                <iconify-icon icon="solar:pin-linear" width="14" />
-                {t.pinned ? 'Unpin' : 'Pin'}
-              </button>
-              <button onClick={() => { updateLocalConversation(t.id, { unread: !t.unread }); setContextMenuConversation(null); refresh() }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-black/5 transition-colors"
-                style={{ color: '#111827' }}>
-                <iconify-icon icon="solar:eye-closed-linear" width="14" />
-                {t.unread ? 'Mark as read' : 'Mark as unread'}
-              </button>
-              <button onClick={() => { setRenameConversationValue(t.summary); setRenamingConversationId(t.id); setContextMenuConversation(null) }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-black/5 transition-colors"
-                style={{ color: '#111827' }}>
-                <iconify-icon icon="solar:pen-2-linear" width="14" />
-                Rename
-              </button>
-              <button onClick={() => { handleDelete(t.id); setContextMenuConversation(null) }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-black/5 transition-colors"
-                style={{ color: '#3b82f6' }}>
-                <iconify-icon icon="solar:trash-bin-trash-linear" width="14" />
-                Delete
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    )
-  }
-
-  const currentConversation = conversations.find(t => t.id === chatState?.conversationId) ?? null
+  const currentConversation = conversations.find((t) => t.id === chatState?.conversationId) ?? null
 
   // Keep the active conversation's project expanded.
   useEffect(() => {
     const cId = chatState?.conversationId
     if (!cId) return
-    const g = groups.find(gr => gr.conversationIds.includes(cId))
-    if (g && collapsedProjects[g.project.id]) {
-      setCollapsedProjects(p => ({ ...p, [g.project.id]: false }))
-    }
+    const g = groups.find((gr) => gr.conversationIds.includes(cId))
+    if (g && collapsedProjects[g.project.id]) setCollapsedProjects((p) => ({ ...p, [g.project.id]: false }))
   }, [chatState?.conversationId, groups, collapsedProjects])
 
   useEffect(() => {
-    setShowChatMenu(false)
-    setRenamingTitle(false)
-    setConfirmDeleteChat(false)
     if (chatState) {
       localStorage.setItem('spectr_last_chat', JSON.stringify({ prompt: chatState.prompt, conversationId: chatState.conversationId }))
       // Sync conversation ID to URL (?c=<id>) without adding a history entry
       const params = new URLSearchParams(window.location.search)
-      if (params.get('c') !== chatState.conversationId) {
-        router.replace(`/dashboard?c=${chatState.conversationId}`, { scroll: false })
-      }
+      if (params.get('c') !== chatState.conversationId) router.replace(`/dashboard?c=${chatState.conversationId}`, { scroll: false })
     } else {
       localStorage.removeItem('spectr_last_chat')
       const params = new URLSearchParams(window.location.search)
@@ -1649,15 +181,12 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
     void loadConversationGroups()
       .then(() => {
         refresh()
-        let match = getConversations().find(c => c.id === cId)
-        if (match) {
-          setChatState({ prompt: match.summary, conversationId: match.id, autoRun: false })
-          return
-        }
+        let match = getConversations().find((c) => c.id === cId)
+        if (match) { setChatState({ prompt: match.summary, conversationId: match.id, autoRun: false }); return }
         // Not in the grouped result (null project_id / legacy) — flat fallback.
-        return loadConversations().then(convs => {
+        return loadConversations().then((convs) => {
           setConversations(convs)
-          match = convs.find(c => c.id === cId)
+          match = convs.find((c) => c.id === cId)
           if (match) setChatState({ prompt: match.summary, conversationId: match.id, autoRun: false })
         })
       })
@@ -1668,544 +197,345 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
   // Handle browser back/forward between conversations
   useEffect(() => {
     const handler = (e: PopStateEvent) => {
-      if (e.state?.activeNav) {
-        setActiveNav(e.state.activeNav)
-        setChatState(null)
-        return
-      }
-      const params = new URLSearchParams(window.location.search)
-      const cId = params.get('c')
-      if (!cId) {
-        setChatState(null)
-      } else {
-        const match = getConversations().find(c => c.id === cId)
-        if (match) setChatState({ prompt: match.summary, conversationId: match.id, autoRun: false })
-      }
+      if (e.state?.activeNav) { setActiveNav(e.state.activeNav); setChatState(null); return }
+      const cId = new URLSearchParams(window.location.search).get('c')
+      if (!cId) { setChatState(null); return }
+      const match = getConversations().find((c) => c.id === cId)
+      if (match) setChatState({ prompt: match.summary, conversationId: match.id, autoRun: false })
     }
     window.addEventListener('popstate', handler)
     return () => window.removeEventListener('popstate', handler)
   }, [])
 
-  const toggleChatPin = () => {
-    if (!currentConversation) return
-    updateLocalConversation(currentConversation.id, { pinned: !currentConversation.pinned })
-    refresh()
-    setShowChatMenu(false)
+  const visibleGroups = useMemo(() => {
+    const byId = new Map(conversations.map((c) => [c.id, c]))
+    return groups
+      .map((g) => ({ group: g, convs: sortGroupConversations(g.conversationIds, byId) }))
+      .filter((x) => x.convs.length > 0)
+  }, [groups, conversations])
+
+  const openConversation = (t: LocalConversation) => {
+    setChatState({ prompt: t.summary, conversationId: t.id, autoRun: false })
+    setActiveNav('home')
+    if (t.unread) { updateLocalConversation(t.id, { unread: false }); refresh() }
+    if (isMobile()) setSidebarOpen(false)
   }
 
-  const toggleChatUnread = () => {
-    if (!currentConversation) return
-    updateLocalConversation(currentConversation.id, { unread: !currentConversation.unread })
-    refresh()
-    setShowChatMenu(false)
+  const goNewProject = () => {
+    setActiveNav('home'); setChatState(null); setComposerProjectId('')
+    if (isMobile()) setSidebarOpen(false)
   }
 
-  const startChatRename = () => {
-    if (!currentConversation) return
-    setRenameValue(currentConversation.summary)
-    setRenamingTitle(true)
-    setShowChatMenu(false)
+  const goArtifacts = () => {
+    setActiveNav('documents'); setChatState(null)
+    if (isMobile()) setSidebarOpen(false)
   }
 
-  const commitChatRename = () => {
-    if (currentConversation) {
-      const value = renameValue.trim()
-      if (value && value !== currentConversation.summary) {
-        updateLocalConversation(currentConversation.id, { summary: value })
-        setChatState(prev => (prev ? { ...prev, prompt: value } : prev))
-        refresh()
-      }
+  const handleSuccess = (t: LocalConversation) => {
+    setComposerProjectId(null)
+    usageQuery.invalidate()
+    setChatState({ prompt: t.summary, conversationId: t.id, autoRun: true })
+    // A project-less create minted a fresh project server-side — reload groups.
+    void loadConversationGroups().then(() => refresh()).catch(() => refresh())
+  }
+
+  // "+ New chat" inside a project — opens the composer carrying that project.
+  const startChatInProject = (projectId: string, autoRename = false) => {
+    setComposerProjectId(projectId)
+    setChatState(null)
+    setActiveNav('home')
+    setCollapsedProjects((p) => ({ ...p, [projectId]: false }))
+    if (autoRename) {
+      setRenameProjectValue(groups.find((g) => g.project.id === projectId)?.project.title ?? '')
+      setRenamingProjectId(projectId)
     }
-    setRenamingTitle(false)
+    if (isMobile()) setSidebarOpen(false)
   }
+
+  const commitProjectRename = () => {
+    if (renamingProjectId && renameProjectValue.trim()) { renameLocalProject(renamingProjectId, renameProjectValue.trim()); refresh() }
+    setRenamingProjectId(null)
+  }
+
+  const commitConversationRename = () => {
+    if (renamingConversationId && renameConversationValue.trim()) {
+      updateLocalConversation(renamingConversationId, { summary: renameConversationValue.trim() })
+      if (chatState?.conversationId === renamingConversationId) setChatState((prev) => (prev ? { ...prev, prompt: renameConversationValue.trim() } : prev))
+      refresh()
+    }
+    setRenamingConversationId(null)
+  }
+
+  const togglePin = (c: LocalConversation) => { updateLocalConversation(c.id, { pinned: !c.pinned }); refresh() }
+  const toggleUnread = (c: LocalConversation) => { updateLocalConversation(c.id, { unread: !c.unread }); refresh() }
 
   const handleChatPromptUpdate = (text: string) => {
     if (!currentConversation) return
     updateLocalConversation(currentConversation.id, { summary: text, description: text })
-    setChatState(prev => (prev ? { ...prev, prompt: text } : prev))
+    setChatState((prev) => (prev ? { ...prev, prompt: text } : prev))
     refresh()
   }
 
-  const handleDeleteChat = () => {
-    setShowChatMenu(false)
-    setConfirmDeleteChat(true)
-  }
-
-  const confirmDeleteChatNow = () => {
-    if (!currentConversation) return
-    deleteLocalConversation(currentConversation.id)
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+    const t = deleteTarget
+    deleteLocalConversation(t.id)
+    if (chatState?.conversationId === t.id) setChatState(null)
     refresh()
-    setChatState(null)
-    setConfirmDeleteChat(false)
+    toast.info('Chat deleted', { description: `"${t.summary}" was removed.` })
+    setDeleteTarget(null)
   }
 
-  const notifications = conversations.filter(t => t.status === 'done' && t.unread)
-
-  const openNotification = (t: LocalConversation) => {
-    setShowNotifMenu(false)
-    updateLocalConversation(t.id, { unread: false })
-    refresh()
-    setChatState({ prompt: t.summary, conversationId: t.id, autoRun: false })
-    setActiveNav('home')
-  }
-
-  const openShareModal = () => {
-    if (!currentConversation) return
-    setShowMoreMenu(false)
-    setShowNotifMenu(false)
-    setShareVisibility('private')
-    setShowShareModal(true)
-  }
-
-  const handleCreateShareLink = async () => {
-    if (!currentConversation) return
-    let url: string
-    if (shareVisibility === 'shared') {
-      const { url: sharePath } = await shareConversation(currentConversation.id)
-      url = `${window.location.origin}${sharePath}`
-    } else {
-      await unshareConversation(currentConversation.id).catch(() => {})
-      url = `${window.location.origin}/dashboard`
+  // The API refuses to delete a project that still has chats, so remove its chats first.
+  const confirmDeleteProject = async () => {
+    if (!projectToDelete) return
+    const { id, title } = projectToDelete
+    const ids = groups.find((g) => g.project.id === id)?.conversationIds ?? []
+    try {
+      ids.forEach((cid) => deleteLocalConversation(cid))
+      await deleteProject(id)
+      if (chatState && ids.includes(chatState.conversationId)) setChatState(null)
+      if (composerProjectId === id) setComposerProjectId(null)
+      await loadConversationGroups().catch(() => {})
+      refresh()
+      toast.info('Project deleted', { description: `"${title}" was removed.` })
+    } catch {
+      toast.error("Couldn't delete project", { description: 'Try again in a moment.' })
+      await loadConversationGroups().catch(() => {})
+      refresh()
     }
-    void navigator.clipboard.writeText(url)
-    setShowShareModal(false)
-    setShareCopied(true)
-    setTimeout(() => setShareCopied(false), 1500)
+    setProjectToDelete(null)
   }
 
-  const byType = (type: ConversationType) => conversations.filter(t => t.type === type)
-  const isHomePage = activeNav === 'home'
-
-  const renderPage = () => {
-    if (activeNav === 'documents') return <DocumentsPanel onOpenDocument={setOpenDocumentId} onOpenConversation={(convId, docTitle) => {
-      const conv = convId
-        ? conversations.find(c => c.id === convId)
-        : conversations.find(c => c.summary.includes(docTitle))
-      if (conv) {
-        history.pushState({ activeNav: 'documents' }, '')
-        setChatState({ prompt: conv.summary, conversationId: conv.id, autoRun: false })
-        setActiveNav('home')
+  const handleCreateShareLink = async (visibility: 'private' | 'shared') => {
+    if (!shareTarget) return
+    try {
+      let url: string
+      if (visibility === 'shared') {
+        const { url: sharePath } = await shareConversation(shareTarget.id)
+        url = `${window.location.origin}${sharePath}`
+      } else {
+        await unshareConversation(shareTarget.id).catch(() => {})
+        url = `${window.location.origin}/dashboard`
       }
-    }} />
+      setShareTarget(null)
+      if (!(await copyText(url, 'Share link copied'))) toast.info('Share link ready', { description: url })
+    } catch {
+      toast.error("Couldn't create share link", { description: 'Check your connection and try again.' })
+    }
+  }
 
-    if (activeNav === 'briefs') return (
-      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl tracking-tighter" style={{ color: '#111827', fontFamily: bowlby }}>MY BRIEFS</h1>
-            <p className="text-sm mt-0.5" style={{ color: '#9ca3af' }}>{conversations.length} {tr('dash_docs_saved')}</p>
-          </div>
-          <ConversationList conversations={conversations} onOpen={(t) => setChatState({ prompt: t.summary, conversationId: t.id, autoRun: false })} onNew={() => setActiveNav('home')} />
+  const openConversationFromDoc = (convId: string | null, docTitle: string) => {
+    const conv = convId ? conversations.find((c) => c.id === convId) : conversations.find((c) => c.summary.includes(docTitle))
+    if (conv) {
+      history.pushState({ activeNav: 'documents' }, '')
+      setChatState({ prompt: conv.summary, conversationId: conv.id, autoRun: false })
+      setActiveNav('home')
+      setOpenDocument(null)
+    }
+  }
+
+  const notifications = conversations.filter((t) => t.status === 'done' && t.unread)
+  const seenNotifs = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    if (seenNotifs.current === null) return
+    for (const n of notifications) {
+      if (seenNotifs.current.has(n.id) || n.id === chatState?.conversationId) continue
+      toast.success(`${n.summary} ${tr('dash_notif_ready')}`, { action: { label: tr('dash_notif_open'), onClick: () => openConversation(n) } })
+    }
+    seenNotifs.current = new Set(notifications.map((n) => n.id))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifications])
+  const markAllNotificationsRead = () => { notifications.forEach((n) => updateLocalConversation(n.id, { unread: false })); refresh() }
+
+  // ── Onboarding / usage card ────────────────────────────────────────────────
+  const checklist: { key: StringKey; done: boolean; run: () => void }[] = [
+    { key: 'home_check_1', done: conversations.length > 0, run: goNewProject },
+    { key: 'home_check_2', done: conversations.some((t) => t.status === 'done'), run: goNewProject },
+    { key: 'home_check_3', done: new Set(conversations.map((t) => t.type)).size >= 3, run: goNewProject },
+    { key: 'home_check_5', done: usage.isPro, run: () => setUpgradeOpen(true) },
+  ]
+  const checklistDone = checklist.filter((c) => c.done).length
+  const nextStep = checklist.find((c) => !c.done)
+  let onboarding: React.ReactNode = null
+  // Wait for real usage data: the default (isPro: false) would flash the free-plan card at Pro users.
+  if (!usageQuery.data) {
+    onboarding = null
+  } else if (!usage.isPro && usage.limit !== null) {
+    const left = usage.limit - usage.used
+    onboarding = (
+      <OnboardingCard
+        done={usage.used} total={usage.limit} title="Documents"
+        next={left <= 0 ? `You've used all ${usage.limit} documents this month.` : left <= 2 ? 'Your free documents are running out!' : 'Free documents this month.'}
+        cta="Upgrade Now" onCta={() => setUpgradeOpen(true)}
+      />
+    )
+  } else {
+    onboarding = (
+      <OnboardingCard
+        done={checklistDone} total={checklist.length} title="Mulai perjalananmu"
+        next={nextStep ? `Next: ${tr(nextStep.key)}` : 'All set. Keep shipping specs.'}
+        cta={nextStep ? 'Continue' : 'New project'} onCta={nextStep ? nextStep.run : goNewProject}
+      />
+    )
+  }
+
+  const title = chatState ? (currentConversation?.summary ?? chatState.prompt) : activeNav === 'documents' ? 'Artifacts' : tr('dash_new_project')
+  const planLabel = sub?.planSlug === 'pro' ? 'Pro' : 'Starter'
+
+  if (!subLoading && sub !== undefined && !sub?.planSlug) {
+    return (
+      <div className="ap-root flex min-h-screen items-center justify-center bg-[#f8fafc]">
+        <div className="max-w-sm px-4 text-center">
+          <p className="mb-4 text-sm text-gray-500">No active plan found. Please contact support.</p>
+          <a href="mailto:hello@etalas.com" className="text-sm font-semibold text-primary underline">hello@etalas.com</a>
         </div>
       </div>
     )
-
-    return null
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#f8fafc', fontFamily: inter }}>
-
-      {/* ── Sidebar ── */}
+    <div className="ap-root flex h-dvh overflow-hidden">
       {sidebarOpen && (
-      <>
-        <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
-        <aside className="flex flex-col w-64 shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto h-full border-r" style={{ backgroundColor: '#ffffff', borderColor: 'rgba(0,0,0,0.08)' }}>
-        <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Spectr" className="h-6 w-auto brightness-0" />
-            <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#111827' }}>Spectr</span>
+        <>
+          <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+          <div className="fixed inset-y-0 left-0 z-50 md:static md:z-auto">
+            <Sidebar
+              activeNav={activeNav}
+              chatActive={!!chatState}
+              onNewProject={goNewProject}
+              onArtifacts={goArtifacts}
+              onSearch={() => setSearchOpen(true)}
+              onCollapse={() => setSidebarOpen(false)}
+              labels={{ menu: 'Menu', newProject: tr('dash_new_project'), artifacts: 'Artifacts', projects: tr('dash_projects'), noChats: tr('dash_no_chats'), newChatInProject: tr('dash_new_chat_in_project'), renameProject: tr('dash_rename_project'), search: 'Search…' }}
+              groups={visibleGroups}
+              activeConversationId={chatState?.conversationId ?? null}
+              collapsedProjects={collapsedProjects}
+              renamingProjectId={renamingProjectId}
+              renameProjectValue={renameProjectValue}
+              renamingConversationId={renamingConversationId}
+              renameConversationValue={renameConversationValue}
+              onToggleProject={(id) => {
+                const nowCollapsed = !!collapsedProjects[id]
+                setCollapsedProjects((p) => ({ ...p, [id]: !p[id] }))
+                if (nowCollapsed && !chatState) { setComposerProjectId(id); setActiveNav('home') } // expanding with no active chat → composer with project context
+              }}
+              onNewChat={(id) => startChatInProject(id, true)}
+              onRenameProjectStart={(id, t) => { setRenameProjectValue(t); setRenamingProjectId(id) }}
+              onRenameProjectChange={setRenameProjectValue}
+              onRenameProjectCommit={commitProjectRename}
+              onRenameProjectCancel={() => setRenamingProjectId(null)}
+              onDeleteProject={(id, title) => setProjectToDelete({ id, title })}
+              onOpenConversation={openConversation}
+              onRenameConversationStart={(c) => { setRenameConversationValue(c.summary); setRenamingConversationId(c.id) }}
+              onRenameConversationChange={setRenameConversationValue}
+              onRenameConversationCommit={commitConversationRename}
+              onRenameConversationCancel={() => setRenamingConversationId(null)}
+              onTogglePin={togglePin}
+              onToggleUnread={toggleUnread}
+              onDeleteConversation={setDeleteTarget}
+              onShareConversation={setShareTarget}
+              onboarding={onboarding}
+            />
           </div>
-          <button className="p-1 rounded transition-colors hover:bg-black/5" onClick={() => setSidebarOpen(false)} aria-label="Collapse sidebar">
-            <iconify-icon icon="solar:sidebar-minimalistic-linear" width="15" style={{ color: 'rgba(0,0,0,0.4)' }} />
-          </button>
-        </div>
-
-        {/* Fixed top nav */}
-        <div className="px-2 mt-3 shrink-0">
-          {/* New project button */}
-          <button
-            onClick={() => { setActiveNav('home'); setChatState(null); setComposerProjectId(''); if (window.innerWidth < 768) setSidebarOpen(false) }}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors text-left"
-            style={activeNav === 'home' && !chatState
-              ? { backgroundColor: '#3b82f6', color: '#ffffff' }
-              : { color: '#374151' }
-            }
-            onMouseEnter={e => { if (!(activeNav === 'home' && !chatState)) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)' }}
-            onMouseLeave={e => { if (!(activeNav === 'home' && !chatState)) e.currentTarget.style.backgroundColor = '' }}
-          >
-            <iconify-icon icon="solar:folder-with-files-linear" width="15" />
-            {tr('dash_new_project')}
-            <iconify-icon icon="solar:pen-new-square-linear" width="13" style={{ marginLeft: 'auto', color: activeNav === 'home' && !chatState ? '#ffffff' : 'rgba(0,0,0,0.3)' }} />
-          </button>
-
-          {/* Pipeline items */}
-          <div className="mt-3 mb-1">
-            {NAV.map(item => {
-              const isActive = activeNav === item.id
-              const count = byType(PIPELINE_MAP[item.id]?.type ?? 'general' as ConversationType).length
-              return (
-                <button key={item.id} onClick={() => { if (item.id === 'documents') setDocumentsProjectId(currentConversation?.projectId ?? null); setActiveNav(item.id); setChatState(null); if (window.innerWidth < 768) setSidebarOpen(false) }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left mb-0.5"
-                  style={isActive ? { backgroundColor: '#3b82f6', color: '#ffffff', fontWeight: 500 } : { color: 'rgba(0,0,0,0.4)' }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)' }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = '' }}
-                >
-                  <iconify-icon icon={item.icon} width="15" />
-                  {item.label}
-                  {item.id !== 'documents' && count > 0 && (
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.4)' }}>{count}</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Projects — scrollable, separated by big gap */}
-        <div className="flex-1 min-h-0 flex flex-col mt-8 px-2">
-          <p className="px-3 pb-2 text-xs font-semibold shrink-0" style={{ color: '#9ca3af' }}>{tr('dash_projects')}</p>
-          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-            {(() => {
-              const byId = new Map(conversations.map(c => [c.id, c]))
-              const visibleGroups = groups
-                .map(g => ({ g, convs: sortGroupConversations(g.conversationIds, byId) }))
-                .filter(x => x.convs.length > 0)
-              if (visibleGroups.length === 0) {
-                return <p className="px-3 text-xs" style={{ color: 'rgba(0,0,0,0.2)' }}>{tr('dash_no_chats')}</p>
-              }
-              return visibleGroups.map(({ g, convs }, idx) => (
-                <ProjectGroup
-                  key={g.project.id}
-                  project={g.project}
-                  colorIndex={idx}
-                  collapsed={!!collapsedProjects[g.project.id]}
-                  isActive={!!chatState && g.conversationIds.includes(chatState.conversationId)}
-                  isRenaming={renamingProjectId === g.project.id}
-                  renameValue={renameProjectValue}
-                  newChatLabel={tr('dash_new_chat_in_project')}
-                  renameLabel={tr('dash_rename_project')}
-                  onToggle={() => {
-                    const nowCollapsed = !!collapsedProjects[g.project.id]
-                    setCollapsedProjects(p => ({ ...p, [g.project.id]: !p[g.project.id] }))
-                    if (nowCollapsed && !chatState) {
-                      // expanding and no active chat → show centered layout with project context
-                      setComposerProjectId(g.project.id)
-                      setActiveNav('home')
-                    }
-                  }}
-                  onNewChat={() => startChatInProject(g.project.id, true)}
-                  onRenameStart={() => { setRenameProjectValue(g.project.title); setRenamingProjectId(g.project.id) }}
-                  onRenameChange={setRenameProjectValue}
-                  onRenameCommit={commitProjectRename}
-                  onRenameCancel={() => setRenamingProjectId(null)}
-                >
-                  {convs.map(renderConversationRow)}
-                </ProjectGroup>
-              ))
-            })()}
-          </div>
-        </div>
-
-        {/* Tutorial checklist */}
-        {sidebarChecklistDone < sidebarChecklist.length && (
-          <div className="px-3 pb-2 shrink-0">
-            <div className="rounded-xl p-3" style={{ backgroundColor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.12)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[13px] font-semibold" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Mulai perjalananmu</p>
-                <p className="text-[10px]" style={{ color: 'rgba(0,0,0,0.35)' }}>{sidebarChecklistDone}/{sidebarChecklist.length}</p>
-              </div>
-              <div className="w-full rounded-full h-1 mb-2.5" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-                <div className="h-1 rounded-full transition-all" style={{ width: `${(sidebarChecklistDone / sidebarChecklist.length) * 100}%`, backgroundColor: '#3b82f6' }} />
-              </div>
-              {sidebarChecklist.map(c => (
-                <div key={c.key} className="flex items-center gap-2 py-1">
-                  <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: c.done ? '#3b82f6' : 'rgba(0,0,0,0.08)' }}>
-                    {c.done && <iconify-icon icon="solar:check-circle-bold" width="12" style={{ color: '#fff' }} />}
-                  </div>
-                  <p className="text-[11px]" style={{ color: c.done ? 'rgba(0,0,0,0.35)' : '#374151', textDecoration: c.done ? 'line-through' : 'none' }}>{tr(c.key)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="border-t px-2 py-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-          <button onClick={() => setShowAccountMenu(true)} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors"
-            style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.08)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#3b82f6' }}>
-              {username.charAt(0).toUpperCase()}
-            </div>
-            <p className="text-xs font-medium truncate" style={{ color: '#111827' }}>{username}</p>
-          </button>
-
-          {showAccountMenu && (
-            <div className="fixed inset-0 z-50" onClick={() => setShowAccountMenu(false)}>
-              <style>{`@keyframes slideUp { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
-              <div className="absolute bottom-[72px] left-2 w-[240px] rounded-2xl overflow-hidden"
-                style={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', animation: 'slideUp 0.15s ease-out', boxShadow: '0 16px 40px rgba(0,0,0,0.14)' }}
-                onClick={e => e.stopPropagation()}>
-
-                {/* User info row */}
-                <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
-                  onClick={() => { setShowAccountMenu(false); setActiveModal('profile') }}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ backgroundColor: '#0d9488' }}>
-                    {username.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: '#111827' }}>{username}</p>
-                    <p className="text-xs truncate" style={{ color: 'rgba(0,0,0,0.4)' }}>{sub?.planSlug === 'pro' ? 'Pro' : 'Starter'}</p>
-                  </div>
-                </button>
-
-                <div className="mx-4" style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.06)' }} />
-
-                {/* Main actions */}
-                <div className="p-2">
-                  {[
-                    { icon: 'solar:crown-linear', label: 'Upgrade Plan', action: () => { setShowAccountMenu(false); setActiveModal('upgrade') }, color: '#3b82f6' },
-                    { icon: 'solar:user-circle-linear', label: 'Profile', action: () => { setShowAccountMenu(false); setActiveModal('profile') } },
-                    { icon: 'solar:settings-linear', label: 'Settings', action: () => { setShowAccountMenu(false); setActiveModal('settings') } },
-                  ].map(item => (
-                    <button key={item.label} onClick={item.action}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
-                      style={{ color: item.color ?? '#374151' }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                      <iconify-icon icon={item.icon} width="16" style={{ color: item.color ?? 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mx-4" style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.06)' }} />
-
-                {/* Bottom: Bantuan + Keluar */}
-                <div className="p-2">
-                  <button onClick={() => { setShowAccountMenu(false); setActiveModal('help') }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
-                    style={{ color: '#374151' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                    <iconify-icon icon="solar:question-circle-linear" width="16" style={{ color: 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
-                    <span className="flex-1">Help</span>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14" style={{ color: 'rgba(0,0,0,0.3)' }} />
-                  </button>
-                  <button onClick={() => { setShowAccountMenu(false); setShowLogoutConfirm(true) }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
-                    style={{ color: '#f87171' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.06)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                    <iconify-icon icon="solar:logout-2-linear" width="16" style={{ color: '#f87171', flexShrink: 0 }} />
-                    Sign out
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-      </>
+        </>
       )}
 
-      {/* ── Main ── */}
-      <main className="flex-1 flex flex-col min-w-0 min-h-0">
+      <main className="ap-main" id="main">
+        <TileGrid />
+        <Topbar
+          title={title}
+          sidebarOpen={sidebarOpen}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          username={username}
+          plan={planLabel}
+          notifications={notifications}
+          noNotificationsLabel={tr('dash_no_notifications')}
+          finishedLabel={tr('dash_finished_processing')}
+          notificationsTitle={tr('dash_notifications')}
+          markAllReadLabel={tr('dash_mark_all_read')}
+          onMarkAllRead={markAllNotificationsRead}
+          onOpenNotification={openConversation}
+          onHelp={() => setHelpOpen(true)}
+          onSettings={() => setAccountTab('settings')}
+          onSignOut={() => setSignOutOpen(true)}
+        />
 
-        {/* Content */}
         {chatState ? (
-          <div className="flex-1 min-h-0">
+          <div className="relative z-[1] min-h-0 flex-1">
             <ChatView
+              key={chatState.conversationId}
               initialPrompt={chatState.prompt}
               conversationId={chatState.conversationId}
               createdAt={currentConversation?.createdAt ?? new Date().toISOString()}
               autoRun={chatState.autoRun}
               onPromptUpdate={handleChatPromptUpdate}
-              onOpenDocument={setOpenDocumentId}
+              onOpenDocument={(id) => setOpenDocument({ id, fromArtifacts: false })}
             />
           </div>
-        ) : isHomePage ? (
-          <HomeOverview
-            conversations={conversations}
-            username={username}
+        ) : activeNav === 'documents' ? (
+          <DocumentsPanel
+            onOpenDocument={(id) => setOpenDocument({ id, fromArtifacts: true })}
+            onOpenConversation={openConversationFromDoc}
+          />
+        ) : (
+          <Home
             usage={usage}
             onSuccess={handleSuccess}
-            onOpenConversation={(t) => setChatState({ prompt: t.summary, conversationId: t.id, autoRun: false })}
-            onGoTemplates={() => setActiveNav('documents')}
-            onGoBriefs={() => setActiveNav('briefs')}
-            onGoType={() => setActiveNav('home')}
             projectId={composerProjectId}
-            projectTitle={composerProjectId ? (groups.find(g => g.project.id === composerProjectId)?.project.title ?? null) : null}
+            projectTitle={composerProjectId ? (groups.find((g) => g.project.id === composerProjectId)?.project.title ?? null) : null}
             onClearProject={() => setComposerProjectId(null)}
-            onUpgrade={() => setActiveModal('upgrade')}
+            onUpgrade={() => setUpgradeOpen(true)}
           />
-        ) : renderPage()}
+        )}
       </main>
 
-
-      {selected && <Drawer conversation={selected} onClose={() => setSelected(null)} onDelete={handleDelete} />}
-
-      <DocumentReaderPanel documentId={openDocumentId} onClose={() => setOpenDocumentId(null)} />
-
-      <ConfirmDeleteModal
-        open={confirmDeleteChat}
-        title="Delete Chat"
-        message={`Are you sure you want to delete "${currentConversation?.summary ?? ''}"?`}
-        onConfirm={confirmDeleteChatNow}
-        onClose={() => setConfirmDeleteChat(false)}
+      <DocumentReaderPanel
+        documentId={openDocument?.id ?? null}
+        onClose={() => setOpenDocument(null)}
+        onGoToChat={openDocument?.fromArtifacts ? (doc) => openConversationFromDoc(doc.conversationId, doc.title) : undefined}
       />
 
-      {showShareModal && (
-        <>
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setShowShareModal(false)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="ds-card-outer ds-shadow-elevated w-full max-w-md" style={{ height: 'auto' }}>
-              <div className="ds-card-inner p-6" style={{ height: 'auto' }}>
-                <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(59,130,246,0.15)' }}>
-                    <iconify-icon icon="solar:share-linear" width="15" style={{ color: '#3b82f6' }} />
-                  </div>
-                  <h3 className="text-lg font-semibold tracking-tight" style={{ color: '#111827' }}>{tr('share_title')}</h3>
-                  <button onClick={() => setShowShareModal(false)}
-                    className="ml-auto w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0"
-                    style={{ color: 'rgba(0,0,0,0.4)' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
-                    aria-label="Close">
-                    <iconify-icon icon="solar:close-circle-linear" width="18" />
-                  </button>
-                </div>
-                <p className="text-sm mb-5" style={{ color: 'rgba(0,0,0,0.4)' }}>{tr('share_subtitle')}</p>
-
-                <div className="flex flex-col gap-2 mb-6">
-                  {([
-                    { key: 'private' as const, icon: 'solar:lock-keyhole-linear', title: tr('share_private_title'), desc: tr('share_private_desc') },
-                    { key: 'shared' as const, icon: 'solar:link-round-angle-linear', title: tr('share_shared_title'), desc: tr('share_shared_desc') },
-                  ]).map(opt => {
-                    const active = shareVisibility === opt.key
-                    return (
-                      <button key={opt.key} onClick={() => setShareVisibility(opt.key)}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-colors"
-                        style={{
-                          backgroundColor: active ? 'rgba(59,130,246,0.08)' : 'rgba(0,0,0,0.03)',
-                          border: active ? '1px solid rgba(59,130,246,0.4)' : '1px solid rgba(0,0,0,0.08)',
-                        }}>
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'rgba(0,0,0,0.06)' }}>
-                          <iconify-icon icon={opt.icon} width="16" style={{ color: active ? '#3b82f6' : 'rgba(0,0,0,0.4)' }} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white">{opt.title}</p>
-                          <p className="text-xs" style={{ color: 'rgba(0,0,0,0.4)' }}>{opt.desc}</p>
-                        </div>
-                        <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ border: `2px solid ${active ? '#3b82f6' : 'rgba(0,0,0,0.2)'}` }}>
-                          {active && <span className="w-[8px] h-[8px] rounded-full" style={{ backgroundColor: '#3b82f6' }} />}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="flex justify-end">
-                  <button onClick={handleCreateShareLink}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: '#3b82f6' }}>
-                    <iconify-icon icon="solar:link-round-linear" width="14" />
-                    {tr('share_create_link')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Logout confirm ── */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setShowLogoutConfirm(false)}>
-          <div className="w-full max-w-sm rounded-2xl p-6 relative"
-            style={{ backgroundColor: '#ffffff', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
-                <iconify-icon icon="solar:logout-2-linear" width="20" style={{ color: '#ef4444' }} />
-              </div>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="p-1 rounded-lg transition-colors"
-                style={{ color: 'rgba(0,0,0,0.3)' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                <iconify-icon icon="solar:close-linear" width="18" />
-              </button>
-            </div>
-            <h2 className="text-lg font-semibold mb-1" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>Sign out?</h2>
-            <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>You'll need to sign in again to access your account.</p>
-            <div className="flex gap-2">
-              <button onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#374151' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.06)')}>
-                Cancel
-              </button>
-              <button onClick={() => { setShowLogoutConfirm(false); logout() }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#ef4444' }}>
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modals ── */}
-      {activeModal && (() => {
-        const meta = {
-          settings: { title: 'Settings', sub: 'Manage your preferences' },
-          help:     { title: 'Help & Docs', sub: 'Spectr usage guide' },
-          profile:  { title: 'Profile', sub: 'Your account information' },
-          upgrade:  { title: 'Upgrade Plan', sub: 'Choose the plan that fits you' },
-        }[activeModal]
-        return (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-            style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setActiveModal(null)}>
-            <div className="relative w-full flex flex-col rounded-2xl overflow-hidden"
-              style={{ maxWidth: activeModal === 'upgrade' ? '480px' : '560px', maxHeight: '88vh', backgroundColor: '#ffffff', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
-              onClick={e => e.stopPropagation()}>
-
-              {/* Modal header */}
-              <div className="flex items-start justify-between px-6 pt-6 pb-4 shrink-0" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                <div>
-                  <h2 className="text-2xl font-semibold" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>{meta.title}</h2>
-                  <p className="text-sm mt-0.5" style={{ color: '#9ca3af' }}>{meta.sub}</p>
-                </div>
-                <button onClick={() => setActiveModal(null)}
-                  className="mt-0.5 p-1 transition-colors shrink-0"
-                  style={{ color: 'rgba(0,0,0,0.35)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#111827')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(0,0,0,0.35)')}>
-                  <iconify-icon icon="solar:close-linear" width="18" />
-                </button>
-              </div>
-
-              {/* Modal body — strip bg/padding from sub-components via wrapper */}
-              <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#ffffff' }}>
-                {activeModal === 'settings' && <Settings onUpgrade={() => setActiveModal('upgrade')} />}
-                {activeModal === 'help' && <HelpPage />}
-                {activeModal === 'profile' && <ProfilePage />}
-                {activeModal === 'upgrade' && <PaymentPage />}
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      <SearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        conversations={conversations}
+        onOpenConversation={openConversation}
+        onNewProject={goNewProject}
+        onArtifacts={goArtifacts}
+        onSettings={() => setAccountTab('settings')}
+        placeholder="Search…"
+      />
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <AccountDialog tab={accountTab} onTabChange={setAccountTab} onClose={() => setAccountTab(null)} />
+      <UpgradeDialog open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <ShareDialog open={shareTarget !== null} onOpenChange={(o) => { if (!o) setShareTarget(null) }} onCreate={handleCreateShareLink} />
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+        title="Delete chat?"
+        message={`Are you sure you want to delete “${deleteTarget?.summary ?? ''}”?`}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+      />
+      <ConfirmDialog
+        open={projectToDelete !== null}
+        onOpenChange={(o) => { if (!o) setProjectToDelete(null) }}
+        title="Delete project?"
+        message={`This will permanently delete “${projectToDelete?.title ?? ''}” including all its chats. This can't be undone.`}
+        confirmLabel="Delete project"
+        onConfirm={() => void confirmDeleteProject()}
+      />
+      <ConfirmDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        icon={LogOut}
+        title="Sign out?"
+        message="You'll need to sign in again to access your account."
+        confirmLabel="Sign out"
+        onConfirm={() => void logout()}
+      />
+      <Toaster />
     </div>
   )
 }

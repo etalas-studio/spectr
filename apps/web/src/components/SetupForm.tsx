@@ -8,7 +8,7 @@ import { useLanguage } from "../lib/i18n";
 import { trackPostHog } from "../lib/posthog";
 import { fetchVerificationStatus } from "../api/auth";
 
-const interTight = "'Inter Tight', 'Inter', sans-serif";
+const interTight = "'Plus Jakarta Sans', sans-serif";
 
 // How often the "check your email" screen polls to see if the user verified
 // from a link opened in a different tab — cheap enough to poll often, the

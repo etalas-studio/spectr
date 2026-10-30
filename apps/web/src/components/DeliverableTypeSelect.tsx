@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from 'lucide-react'
+import { ChevronDownIcon, FileText } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -29,10 +29,11 @@ export function DeliverableTypeSelect({
 }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v ?? '')}>
-      <SelectTrigger className="text-xs px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/15">
-        <SelectValue>{(v) => LABEL_BY_VALUE[v as string] ?? 'Auto'}</SelectValue>
+      <SelectTrigger className="ap-pill h-10 gap-2 rounded-[12px] border-black/[0.08] bg-white px-4 text-sm font-medium text-gray-700 hover:bg-white">
+        <FileText className="size-4" />
+        <SelectValue>{(v) => (v ? LABEL_BY_VALUE[v as string] : 'Document type')}</SelectValue>
         <SelectIcon>
-          <ChevronDownIcon className="size-3" />
+          <ChevronDownIcon className="size-3.5 text-gray-400" />
         </SelectIcon>
       </SelectTrigger>
       <SelectContent>

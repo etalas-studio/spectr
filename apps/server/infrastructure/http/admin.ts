@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import type { Router } from "express";
 import type { HttpDeps } from "./types.js";
 import { requireAdmin } from "../../auth/middleware.js";
@@ -28,6 +27,7 @@ import {
   activateSubscription,
 } from "../../db/repo/subscriptions.js";
 import { getPlan } from "../../billing/plans.js";
+import { getHealthReport } from "../../admin/health.js";
 
 export function registerAdminRoutes(router: Router, deps: HttpDeps): void {
   const db = deps.db;
@@ -292,14 +292,7 @@ export function registerAdminRoutes(router: Router, deps: HttpDeps): void {
       return;
     }
     try {
-      const start = Date.now();
-      await db.execute(sql`SELECT 1`);
-      const dbMs = Date.now() - start;
-      res.status(200).json({
-        ok: true,
-        dbMs,
-        uptimeSeconds: Math.floor(process.uptime()),
-      });
+      res.status(200).json(await getHealthReport(db));
     } catch (err) {
       sendCaughtErrorExpress(res, err, "admin health");
     }

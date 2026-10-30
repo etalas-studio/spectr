@@ -40,6 +40,6 @@ export async function getDocument(id: string): Promise<DocumentDetail> {
   return json<DocumentDetail>(res)
 }
 
-export function documentExportUrl(id: string, format: 'md' | 'pdf' | 'doc'): string {
+export function documentExportUrl(id: string, format: 'md' | 'pdf' | 'doc' | 'html' | 'csv'): string {
   return apiUrl(`/api/documents/${encodeURIComponent(id)}/export?format=${format}`)
 }

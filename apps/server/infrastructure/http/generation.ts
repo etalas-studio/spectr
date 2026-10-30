@@ -545,6 +545,8 @@ export function registerGenerationRoutes(router: Router, deps: HttpDeps): void {
             await updateConversation(db, conversationId, {
               pipelineStage: nextStage,
               pendingType: documentRef ? null : pendingType,
+              // Drives the in-app notification bell; the web clears it right away if the chat is open.
+              unread: true,
             });
             await addChatMessage(db, {
               conversationId,

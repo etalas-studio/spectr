@@ -88,7 +88,7 @@ describe('useAuth', () => {
           ok: true,
           json: async () =>
             loginCalled
-              ? { state: 'authenticated', user: { id: 'u-alice', username: 'alice' } }
+              ? { state: 'authenticated', user: { id: 'u-alice', username: 'alice', email: 'alice@test.com' } }
               : { state: 'unauthenticated' },
         } as Response
       }
@@ -162,7 +162,7 @@ describe('useAuth', () => {
           ok: true,
           json: async () =>
             registered
-              ? { state: 'authenticated', user: { id: 'u-bob', username: 'bob' } }
+              ? { state: 'authenticated', user: { id: 'u-bob', username: 'bob', email: 'bob@test.com' } }
               : { state: 'unauthenticated' },
         } as Response
       }
@@ -233,7 +233,7 @@ describe('useAuth', () => {
         return {
           ok: true,
           json: async () =>
-            loggedOut ? { state: 'unauthenticated' } : { state: 'authenticated', user: { id: 'u-alice', username: 'alice' } },
+            loggedOut ? { state: 'unauthenticated' } : { state: 'authenticated', user: { id: 'u-alice', username: 'alice', email: 'alice@test.com' } },
         } as Response
       }
       if (url === '/api/auth/logout') {
@@ -273,7 +273,7 @@ describe('useAuth', () => {
           ok: true,
           json: async () =>
             loggedIn
-              ? { state: 'authenticated', user: { id: 'u-alice', username: 'alice' } }
+              ? { state: 'authenticated', user: { id: 'u-alice', username: 'alice', email: 'alice@test.com' } }
               : { state: 'unauthenticated' },
         } as Response
       }
