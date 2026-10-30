@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { ChevronDown, CreditCard, Eye, Home, LayoutDashboard, LogOut, PanelLeft, Settings, SlidersHorizontal, UsersRound, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useAppTheme } from '../../components/app/useAppTheme'
-import { ThemeToggle } from '../../components/app/ThemeToggle'
+import { AdminNotifications } from './AdminNotifications'
 import { BrandMark } from '../../components/app/BrandMark'
 import { Button } from '../../components/ui/button'
 import { Toaster } from '../../components/ui/sonner'
@@ -91,7 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {!sidebarOpen && <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar" className="-ml-2 text-[var(--ap-ink-3,#5b6472)]"><PanelLeft /></Button>}
             <h1 className="sr-only">{current?.label ?? 'Admin'}</h1>
             <div className="flex-1" />
-            <ThemeToggle />
+            <AdminNotifications />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex h-10 items-center gap-2.5 rounded-full py-1 pr-2 pl-1 transition-colors hover:bg-[rgb(var(--ap-surf-rgb,255_255_255)/0.6)]" aria-label="Account menu">
                 <span className="ap-avatar size-9 text-sm">{initial}</span>

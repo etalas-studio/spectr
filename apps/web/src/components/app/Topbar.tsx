@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Bell, CheckCheck, ChevronDown, CircleHelp, FileText, LayoutTemplate, LogOut, MessageCircle, PanelLeft, Settings } from 'lucide-react'
 import { useLanguage } from '../../lib/i18n'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { ThemeToggle } from './ThemeToggle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -53,7 +52,6 @@ export function Topbar(p: TopbarProps) {
       <h1 className="min-w-0 flex-1 truncate text-lg leading-7 font-semibold tracking-[-0.025em]">{p.title}</h1>
 
       <div className="flex shrink-0 items-center gap-2">
-        <ThemeToggle />
         <Button variant="glass" size="icon-xl" className="max-sm:hidden" onClick={p.onHelp} aria-label="Help"><CircleHelp className="size-[18px]" /></Button>
 
         <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>

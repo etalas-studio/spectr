@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ThemePicker } from '@/components/app/ThemeToggle'
+import { Switch } from '@/components/ui/switch'
 import { REFRESH_OPTIONS, useRefreshSeconds } from '../prefs'
+import { NOTIF_KINDS, useNotifKinds } from '../notifications'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -36,6 +38,7 @@ export default function AdminSettingsPage() {
   const { state, logout } = useAuth()
   const router = useRouter()
   const [refresh, setRefresh] = useRefreshSeconds()
+  const [enabledKinds, setKind] = useNotifKinds()
   const [loggingOut, setLoggingOut] = useState(false)
 
   const username = state.status === 'authenticated' ? (state.username ?? '—') : '—'
@@ -69,6 +72,14 @@ export default function AdminSettingsPage() {
                 ))}
               </ToggleGroup>
             </Row>
+          </Section>
+
+          <Section title="Notifications">
+            {NOTIF_KINDS.map((k) => (
+              <Row key={k.kind} title={k.label} sub={k.sub}>
+                <Switch checked={enabledKinds.includes(k.kind)} onCheckedChange={(on) => setKind(k.kind, on)} aria-label={k.label} />
+              </Row>
+            ))}
           </Section>
 
           <Section title="Account">
