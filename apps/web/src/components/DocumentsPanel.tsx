@@ -34,8 +34,8 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { day
 function DownloadMenu({ docId }: { docId: string }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 rounded-[12px] border bg-white px-3.5 text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50">
-        <Download className="size-3.5" /> Download <ChevronDown className="size-3 text-gray-400" />
+      <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 rounded-[12px] border bg-[var(--ap-surface,#fff)] px-3.5 text-[13px] font-medium text-[var(--ap-ink-2,#374151)] transition-colors hover:bg-[rgb(var(--ap-ov,0_0_0)/0.04)]">
+        <Download className="size-3.5" /> Download <ChevronDown className="size-3 text-[var(--ap-ink-4,#6b7280)]" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-44">
         {DOWNLOAD_FORMATS.map((f) => (
@@ -105,11 +105,11 @@ function ArtifactCard({ doc, onOpenConversation, onOpen, onChanged }: {
             <span className="flex size-5 items-center justify-center rounded" style={{ backgroundColor: meta.tint }}><Icon className="size-[11px]" /></span>
             {meta.label}
           </span>
-          {doc.latestVersionNo != null && <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-gray-400">v{doc.latestVersionNo}</span>}
+          {doc.latestVersionNo != null && <span className="rounded-full bg-[rgb(var(--ap-ov,0_0_0)/0.05)] px-2 py-0.5 text-[10px] font-medium text-[var(--ap-ink-4,#6b7280)]">v{doc.latestVersionNo}</span>}
         </div>
         <div>
           <h3 className="line-clamp-2 text-sm leading-snug font-semibold">{doc.title}</h3>
-          <p className="mt-0.5 text-xs text-gray-400">{fmtDate(doc.createdAt ?? doc.updatedAt)}</p>
+          <p className="mt-0.5 text-xs text-[var(--ap-ink-4,#6b7280)]">{fmtDate(doc.createdAt ?? doc.updatedAt)}</p>
         </div>
 
         <div className="mt-auto flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -119,7 +119,7 @@ function ArtifactCard({ doc, onOpenConversation, onOpen, onChanged }: {
           {isPrototype ? (
             <>
               <Select value={String(version)} onValueChange={(v) => setVersion(Number(v))}>
-                <SelectTrigger className="h-9 rounded-[12px] border bg-white px-3 text-[13px] font-medium text-gray-700" aria-label="Version">
+                <SelectTrigger className="h-9 rounded-[12px] border bg-[var(--ap-surface,#fff)] px-3 text-[13px] font-medium text-[var(--ap-ink-2,#374151)]" aria-label="Version">
                   <SelectValue>{(v) => `v${v}${Number(v) === current ? ' ✓' : ''}`}</SelectValue>
                   <SelectIcon><ChevronDownIcon className="size-3" /></SelectIcon>
                 </SelectTrigger>
@@ -198,20 +198,20 @@ export default function DocumentsPanel({ onOpenDocument, onOpenConversation }: {
               {TABS.map((t) => (
                 <TabsTrigger key={t.id} value={t.id}>
                   <t.icon /> {t.label}
-                  {counts[t.id] > 0 && <span className="text-xs text-gray-400">{counts[t.id]}</span>}
+                  {counts[t.id] > 0 && <span className="text-xs text-[var(--ap-ink-4,#6b7280)]">{counts[t.id]}</span>}
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
 
           <div className="relative hidden sm:block">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-gray-400" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search artifacts" className="h-10 w-48 rounded-[12px] border-white/90 bg-white pl-8 text-[13px] shadow-[0_1px_2px_rgba(17,24,39,0.06)]" />
-            {search && <Button type="button" variant="ghost" size="icon-xs" aria-label="Clear search" onClick={() => setSearch('')} className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-400 hover:text-gray-700"><X className="size-3.5" /></Button>}
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-[var(--ap-ink-4,#6b7280)]" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search artifacts" className="h-10 w-48 rounded-[12px] border-[var(--ap-edge,rgba(255,255,255,.95))] bg-[var(--ap-surface,#fff)] pl-8 text-[13px] shadow-[0_1px_2px_rgba(17,24,39,0.06)]" />
+            {search && <Button type="button" variant="ghost" size="icon-xs" aria-label="Clear search" onClick={() => setSearch('')} className="absolute top-1/2 right-2 -translate-y-1/2 text-[var(--ap-ink-4,#6b7280)] hover:text-[var(--ap-ink-2,#374151)]"><X className="size-3.5" /></Button>}
           </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className={`inline-flex h-10 items-center gap-2 rounded-[12px] border px-3.5 text-[13px] font-medium shadow-[0_1px_2px_rgba(17,24,39,0.06)] transition-colors ${sortBy !== 'newest' ? 'border-primary bg-primary text-white' : 'border-white/90 bg-white text-gray-700 hover:bg-white'}`}>
+            <DropdownMenuTrigger className={`inline-flex h-10 items-center gap-2 rounded-[12px] border px-3.5 text-[13px] font-medium shadow-[0_1px_2px_rgba(17,24,39,0.06)] transition-colors ${sortBy !== 'newest' ? 'border-primary bg-primary text-white' : 'border-[var(--ap-edge,rgba(255,255,255,.95))] bg-[var(--ap-surface,#fff)] text-[var(--ap-ink-2,#374151)] hover:bg-[var(--ap-surface,#fff)]'}`}>
               <ListFilter className="size-3.5" /> Filter
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -228,7 +228,7 @@ export default function DocumentsPanel({ onOpenDocument, onOpenConversation }: {
           </DropdownMenu>
 
           <Popover>
-            <PopoverTrigger className={`inline-flex h-10 items-center gap-2 rounded-[12px] border px-3.5 text-[13px] font-medium shadow-[0_1px_2px_rgba(17,24,39,0.06)] transition-colors ${dateActive ? 'border-primary bg-primary text-white' : 'border-white/90 bg-white text-gray-700 hover:bg-white'}`}>
+            <PopoverTrigger className={`inline-flex h-10 items-center gap-2 rounded-[12px] border px-3.5 text-[13px] font-medium shadow-[0_1px_2px_rgba(17,24,39,0.06)] transition-colors ${dateActive ? 'border-primary bg-primary text-white' : 'border-[var(--ap-edge,rgba(255,255,255,.95))] bg-[var(--ap-surface,#fff)] text-[var(--ap-ink-2,#374151)] hover:bg-[var(--ap-surface,#fff)]'}`}>
               <CalendarDays className="size-3.5" />
               {range?.from ? `${format(range.from, 'MMM d')}${range.to ? ` - ${format(range.to, 'MMM d')}` : ''}` : 'Date'}
             </PopoverTrigger>
@@ -250,12 +250,12 @@ export default function DocumentsPanel({ onOpenDocument, onOpenConversation }: {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="size-4 animate-spin" /> Loading…</div>
+          <div className="flex items-center gap-2 text-sm text-[var(--ap-ink-4,#6b7280)]"><Loader2 className="size-4 animate-spin" /> Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="mx-auto mt-4 flex min-h-[420px] max-w-full flex-col items-center justify-center rounded-2xl bg-white text-center shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-black/[0.05] text-black/30"><FileText className="size-[22px]" /></span>
+          <div className="mx-auto mt-4 flex min-h-[420px] max-w-full flex-col items-center justify-center rounded-2xl bg-[var(--ap-surface,#fff)] text-center shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-[rgb(var(--ap-ov,0_0_0)/0.05)] text-[var(--ap-ink-4,#6b7280)]"><FileText className="size-[22px]" /></span>
             <p className="mt-4 text-sm font-medium">{search ? 'No results found' : 'No artifacts yet'}</p>
-            <p className="mt-1 text-xs text-gray-500">{search ? `No artifacts match "${search}"` : 'Start a chat and ask Spectr to generate a document or prototype.'}</p>
+            <p className="mt-1 text-xs text-[var(--ap-ink-3,#5b6472)]">{search ? `No artifacts match "${search}"` : 'Start a chat and ask Spectr to generate a document or prototype.'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

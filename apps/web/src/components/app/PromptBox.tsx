@@ -115,15 +115,15 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
       onDrop={handleDrop}
     >
       {projectId && projectTitle && (
-        <div className="flex items-center gap-3 rounded-t-[18px] border-b border-black/[0.06] bg-black/[0.03] px-5 py-2.5">
-          <p className="truncate text-xs text-gray-500">{tr('dash_new_chat_in')} <span className="font-semibold text-gray-900">{projectTitle}</span></p>
+        <div className="flex items-center gap-3 rounded-t-[18px] border-b border-[rgb(var(--ap-ov,0_0_0)/0.06)] bg-[rgb(var(--ap-ov,0_0_0)/0.03)] px-5 py-2.5">
+          <p className="truncate text-xs text-[var(--ap-ink-3,#5b6472)]">{tr('dash_new_chat_in')} <span className="font-semibold text-[var(--ap-ink,#111827)]">{projectTitle}</span></p>
         </div>
       )}
       {atLimit && (
         <div className="flex items-center justify-between gap-3 rounded-t-[18px] border-b border-primary/15 bg-primary/[0.07] px-5 py-3">
           <div>
-            <p className="text-xs font-semibold text-[#1e40af]">{tr('plan_limit_title')}</p>
-            <p className="mt-0.5 text-xs text-gray-500">{tr('plan_limit_desc')}</p>
+            <p className="text-xs font-semibold text-[var(--ap-accent-ink,#1e40af)]">{tr('plan_limit_title')}</p>
+            <p className="mt-0.5 text-xs text-[var(--ap-ink-3,#5b6472)]">{tr('plan_limit_desc')}</p>
           </div>
           <Button variant="primary" size="sm" className="h-8 shrink-0 px-3 text-xs font-semibold" render={<a href="/pay?plan=pro" />}>{tr('plan_limit_upgrade')}</Button>
         </div>
@@ -145,7 +145,7 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 px-5 pb-3">
           {attachments.map((a, i) => (
-            <Badge key={i} className="gap-1.5 rounded-lg px-2.5 py-1 text-gray-700">
+            <Badge key={i} className="gap-1.5 rounded-lg px-2.5 py-1 text-[var(--ap-ink-2,#374151)]">
               {a.type.startsWith('image/') ? <img src={a.dataUrl} className="size-4 rounded object-cover" alt="" /> : <FileIcon className="size-3" />}
               <span className="max-w-[100px] truncate">{a.name}</span>
               <Button variant="ghost" size="icon-xs" className="size-4 opacity-40 hover:bg-transparent hover:opacity-100" onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))} aria-label="Remove attachment"><X className="size-3" /></Button>

@@ -33,7 +33,7 @@ export default function DocumentCard({
     return () => { cancelled = true }
   }, [documentId])
 
-  if (error) return <div className="text-sm text-gray-400">Document unavailable</div>
+  if (error) return <div className="text-sm text-[var(--ap-ink-4,#6b7280)]">Document unavailable</div>
 
   const type = doc?.type ?? initial?.type ?? ''
   const meta = typeMeta(type)
@@ -49,12 +49,12 @@ export default function DocumentCard({
           <Icon className="size-[17px]" style={{ color: meta.ink }} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[10px] leading-3.5 font-semibold tracking-[0.12em] text-gray-500 uppercase">{label}</span>
+          <span className="block text-[10px] leading-3.5 font-semibold tracking-[0.12em] text-[var(--ap-ink-3,#5b6472)] uppercase">{label}</span>
           <span className="mt-0.5 block truncate text-sm font-semibold">{title}</span>
         </span>
-        {commitSha && <Badge className="shrink-0 bg-black/5 font-mono text-gray-500">{commitSha.slice(0, 7)}</Badge>}
+        {commitSha && <Badge className="shrink-0 bg-[rgb(var(--ap-ov,0_0_0)/0.05)] font-mono text-[var(--ap-ink-3,#5b6472)]">{commitSha.slice(0, 7)}</Badge>}
       </div>
-      <div className="mt-3 flex items-center gap-1.5 border-t pt-3 text-xs font-medium text-gray-500">
+      <div className="mt-3 flex items-center gap-1.5 border-t pt-3 text-xs font-medium text-[var(--ap-ink-3,#5b6472)]">
         <Eye className="size-3.5" />
         <span>Preview &amp; Download</span>
         <ArrowRight className="ml-auto size-3.5 transition-transform group-hover:translate-x-0.5" />

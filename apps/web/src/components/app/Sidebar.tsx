@@ -58,7 +58,7 @@ function ConversationRow({ c, p }: { c: LocalConversation; p: SidebarProps }) {
         onClick={() => p.onOpenConversation(c)}
         aria-current={isActive}
       >
-        <span className="flex size-4 shrink-0 items-center justify-center"><MessageCircle className="size-[15px] text-black/35" /></span>
+        <span className="flex size-4 shrink-0 items-center justify-center"><MessageCircle className="size-[15px] text-[var(--ap-ink-4,#6b7280)]" /></span>
         {isRenaming ? (
           <Input
             autoFocus
@@ -70,9 +70,9 @@ function ConversationRow({ c, p }: { c: LocalConversation; p: SidebarProps }) {
             className="h-6 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-xs shadow-none focus-visible:bg-transparent focus-visible:ring-0"
           />
         ) : (
-          <span className={`min-w-0 flex-1 truncate text-left text-xs ${isActive ? 'font-medium text-[#1e40af]' : c.unread ? 'font-semibold text-gray-900' : 'text-black/60'}`}>{c.summary}</span>
+          <span className={`min-w-0 flex-1 truncate text-left text-xs ${isActive ? 'font-medium text-[var(--ap-accent-ink,#1e40af)]' : c.unread ? 'font-semibold text-[var(--ap-ink,#111827)]' : 'text-[var(--ap-ink-3,#5b6472)]'}`}>{c.summary}</span>
         )}
-        {c.pinned && <PinIcon className="size-2.5 shrink-0 text-black/30" />}
+        {c.pinned && <PinIcon className="size-2.5 shrink-0 text-[var(--ap-ink-4,#6b7280)]" />}
         {c.unread && <Badge className="size-1.5 shrink-0 bg-primary p-0" aria-hidden="true" />}
       </Button>
       {!isRenaming && (
@@ -81,7 +81,7 @@ function ConversationRow({ c, p }: { c: LocalConversation; p: SidebarProps }) {
           size="icon-xs"
           onClick={() => p.onRenameConversationStart(c)}
           aria-label="Rename chat"
-          className="absolute top-1/2 right-1.5 -translate-y-1/2 text-black/40 transition-opacity md:opacity-0 md:group-hover/item:opacity-100 md:focus-visible:opacity-100"
+          className="absolute top-1/2 right-1.5 -translate-y-1/2 text-[var(--ap-ink-4,#6b7280)] transition-opacity md:opacity-0 md:group-hover/item:opacity-100 md:focus-visible:opacity-100"
         >
           <Pencil className="size-[13px]" />
         </Button>
@@ -107,9 +107,9 @@ function ProjectRow({ g, convs, idx, p }: { g: ConversationGroup; convs: LocalCo
           nativeButton={false}
           render={<div />}
           onClick={() => p.onToggleProject(g.project.id)}
-          className={`cursor-pointer select-none text-sm ${isRenaming ? '' : 'pr-[60px]'} ${isActive ? 'bg-black/5' : ''}`}
+          className={`cursor-pointer select-none text-sm ${isRenaming ? '' : 'pr-[60px]'} ${isActive ? 'bg-[rgb(var(--ap-ov,0_0_0)/0.05)]' : ''}`}
         >
-          {collapsed ? <ChevronRight className="size-[11px] shrink-0 text-black/30" /> : <ChevronDown className="size-[11px] shrink-0 text-black/30" />}
+          {collapsed ? <ChevronRight className="size-[11px] shrink-0 text-[var(--ap-ink-4,#6b7280)]" /> : <ChevronDown className="size-[11px] shrink-0 text-[var(--ap-ink-4,#6b7280)]" />}
           <Folder className="size-4 shrink-0" style={{ color, fill: color }} />
           {isRenaming ? (
             <Input
@@ -122,7 +122,7 @@ function ProjectRow({ g, convs, idx, p }: { g: ConversationGroup; convs: LocalCo
               className="h-6 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:bg-transparent focus-visible:ring-0"
             />
           ) : (
-            <span className={`min-w-0 flex-1 truncate text-sm text-gray-700 ${isActive ? 'font-semibold' : 'font-medium'}`} title={g.project.title}>{g.project.title}</span>
+            <span className={`min-w-0 flex-1 truncate text-sm text-[var(--ap-ink-2,#374151)] ${isActive ? 'font-semibold' : 'font-medium'}`} title={g.project.title}>{g.project.title}</span>
           )}
         </Button>
         {!isRenaming && (
@@ -132,12 +132,12 @@ function ProjectRow({ g, convs, idx, p }: { g: ConversationGroup; convs: LocalCo
               size="icon-xs"
               onClick={() => p.onRenameProjectStart(g.project.id, g.project.title)}
               aria-label={p.labels.renameProject}
-              className="text-black/40"
+              className="text-[var(--ap-ink-4,#6b7280)]"
             >
               <Pencil className="size-[13px]" />
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger aria-label="Project options" render={<Button variant="ghost" size="icon-xs" className="text-black/40" />}>
+              <DropdownMenuTrigger aria-label="Project options" render={<Button variant="ghost" size="icon-xs" className="text-[var(--ap-ink-4,#6b7280)]" />}>
                 <MoreHorizontal className="size-[14px]" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -154,7 +154,7 @@ function ProjectRow({ g, convs, idx, p }: { g: ConversationGroup; convs: LocalCo
       {!collapsed && (
         <div className="mt-0.5 ml-4 pl-2" style={{ borderLeft: `2px solid ${color}50` }}>
           {convs.map((c) => <ConversationRow key={c.id} c={c} p={p} />)}
-          <Button variant="row" onClick={() => p.onNewChat(g.project.id)} className="h-8 text-gray-500 hover:text-gray-800">
+          <Button variant="row" onClick={() => p.onNewChat(g.project.id)} className="h-8 text-[var(--ap-ink-3,#5b6472)] hover:text-[var(--ap-ink,#111827)]">
             <span className="flex size-4 shrink-0 items-center justify-center"><PlusCircle className="size-[13px]" /></span>
             {p.labels.newChatInProject}
           </Button>
@@ -166,13 +166,13 @@ function ProjectRow({ g, convs, idx, p }: { g: ConversationGroup; convs: LocalCo
 
 export function Sidebar(p: SidebarProps) {
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col bg-white" aria-label="Sidebar">
+    <aside className="flex h-full w-64 shrink-0 flex-col bg-[var(--ap-surface,#fff)]" aria-label="Sidebar">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <div className="flex items-center gap-2.5">
           <BrandMark />
           <span className="text-sm font-semibold tracking-[0.18em] uppercase">Spectr</span>
         </div>
-        <Button variant="ghost" size="icon-sm" onClick={p.onCollapse} aria-label="Collapse sidebar" className="text-black/40"><PanelLeft /></Button>
+        <Button variant="ghost" size="icon-sm" onClick={p.onCollapse} aria-label="Collapse sidebar" className="text-[var(--ap-ink-4,#6b7280)]"><PanelLeft /></Button>
       </div>
 
       <div className="px-3 pt-4">
@@ -197,7 +197,7 @@ export function Sidebar(p: SidebarProps) {
         <p className="ap-label shrink-0">{p.labels.projects}</p>
         <div className="ap-scroll min-h-0 flex-1 overflow-y-auto">
           {p.groups.length === 0
-            ? <p className="px-3 text-xs text-black/30">{p.labels.noChats}</p>
+            ? <p className="px-3 text-xs text-[var(--ap-ink-4,#6b7280)]">{p.labels.noChats}</p>
             : p.groups.map(({ group, convs }, i) => <ProjectRow key={group.project.id} g={group} convs={convs} idx={i} p={p} />)}
         </div>
       </div>
@@ -220,7 +220,7 @@ export function OnboardingCard({
         <span className="text-sm font-semibold">{done}/{total}</span>
         <span className="text-sm font-medium">{title}</span>
       </div>
-      <p className="relative mt-2 text-[13px] text-gray-500">{next}</p>
+      <p className="relative mt-2 text-[13px] text-[var(--ap-ink-3,#5b6472)]">{next}</p>
       <SegmentedProgress className="relative mt-3" segments={segments} value={filled ?? done} max={filled !== undefined ? segments : total} />
       <Button variant="primary" onClick={onCta} className="relative mt-4 h-10 w-full text-sm font-medium">{cta}</Button>
     </div>

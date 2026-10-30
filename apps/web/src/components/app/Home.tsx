@@ -46,10 +46,10 @@ export default function Home({
     <div className="ap-scroll relative z-[1] flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-6 pt-4 pb-10">
       <div className="my-auto w-full max-w-[880px] py-6">
         <div className="mb-4 flex justify-center">
-          <Badge className="gap-2 border border-white/75 bg-white/45 px-3.5 py-1.5 text-[13px] text-black/60 shadow-[0_2px_10px_rgba(17,24,39,0.06)] backdrop-blur-md">
-            {usage.isPro ? <Crown className="size-[13px] text-amber-500" fill="currentColor" /> : <Lock className="size-[13px] text-black/40" />}
+          <Badge className="gap-2 border border-[var(--ap-edge,rgba(255,255,255,.95))] bg-[rgb(var(--ap-surf-rgb,255_255_255)/0.45)] px-3.5 py-1.5 text-[13px] text-[var(--ap-ink-3,#5b6472)] shadow-[0_2px_10px_rgba(17,24,39,0.06)] backdrop-blur-md">
+            {usage.isPro ? <Crown className="size-[13px] text-amber-500" fill="currentColor" /> : <Lock className="size-[13px] text-[var(--ap-ink-4,#6b7280)]" />}
             {usage.isPro ? 'Pro Plan' : 'Starter Plan'}
-            {!usage.isPro && <Button variant="link" onClick={onUpgrade} className="h-auto p-0 text-[13px] font-semibold text-[#1e40af]">{c.upgrade}</Button>}
+            {!usage.isPro && <Button variant="link" onClick={onUpgrade} className="h-auto p-0 text-[13px] font-semibold text-[var(--ap-accent-ink,#1e40af)]">{c.upgrade}</Button>}
           </Badge>
         </div>
         <div className="mb-5 flex justify-center"><BrandMark size="lg" /></div>
@@ -59,7 +59,7 @@ export default function Home({
 
         <PromptBox onSuccess={onSuccess} usage={usage} projectId={projectId} projectTitle={projectTitle} onClearProject={onClearProject} prefill={prefill} />
 
-        <div className="mt-5 mb-3 flex items-center gap-2 px-1 text-sm font-medium"><Sparkles className="size-4 text-gray-500" />{c.suggestions}</div>
+        <div className="mt-5 mb-3 flex items-center gap-2 px-1 text-sm font-medium"><Sparkles className="size-4 text-[var(--ap-ink-3,#5b6472)]" />{c.suggestions}</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {c.items.map((s) => (
             <Button key={s.title} variant="card" className="ap-sug" onClick={() => setPrefill((p) => ({ text: s.text, n: p.n + 1 }))}>
@@ -67,7 +67,7 @@ export default function Home({
               <span className="ap-sug__ic"><s.icon className="size-5" /></span>
               <span className="relative block">
                 <span className="block text-[15px] leading-[22px] font-semibold">{s.title}</span>
-                <span className="mt-1 block text-sm leading-[22px] text-gray-600">{s.text}</span>
+                <span className="mt-1 block text-sm leading-[22px] text-[var(--ap-ink-2,#374151)]">{s.text}</span>
               </span>
             </Button>
           ))}

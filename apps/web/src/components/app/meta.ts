@@ -20,13 +20,13 @@ export interface TypeMeta {
 
 // Type colours come from the design tokens (--type-*-tint / --type-*-ink).
 export const TYPE_META: Record<string, TypeMeta> = {
-  prd:       { label: 'PRD',       icon: FileText,         tint: 'rgba(38,94,228,0.12)', ink: '#265ee4', wash: 'linear-gradient(135deg,#e8f0ff 0%,#dbe7ff 100%)' },
-  prototype: { label: 'Prototype', icon: LayoutGrid,       tint: '#d9f2ee', ink: '#0d9488', wash: 'linear-gradient(135deg,#f0fdfa 0%,#ccfbf1 100%)' },
-  quotation: { label: 'Quotation', icon: CircleDollarSign, tint: '#ede9fe', ink: '#7c3aed', wash: 'linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)' },
-  specs:     { label: 'Specs',     icon: ListChecks,       tint: '#ffedd5', ink: '#f97316', wash: 'linear-gradient(135deg,#fff7ed 0%,#fed7aa 100%)' },
-  mom:       { label: 'MOM',       icon: NotebookText,     tint: '#dbeafe', ink: '#265ee4', wash: 'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)' },
-  workflow:  { label: 'Workflow',  icon: Workflow,         tint: '#dbeafe', ink: '#265ee4', wash: 'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)' },
-  general:   { label: 'Brief',     icon: StickyNote,       tint: 'rgba(0,0,0,0.06)', ink: '#6b7280', wash: 'linear-gradient(135deg,#f9fafb 0%,#f3f4f6 100%)' },
+  prd:       { label: 'PRD',       icon: FileText,         tint: 'var(--ap-m-prd-tint)', ink: 'var(--ap-m-prd-ink)', wash: 'var(--ap-m-prd-wash)' },
+  prototype: { label: 'Prototype', icon: LayoutGrid,       tint: 'var(--ap-m-prototype-tint)', ink: 'var(--ap-m-prototype-ink)', wash: 'var(--ap-m-prototype-wash)' },
+  quotation: { label: 'Quotation', icon: CircleDollarSign, tint: 'var(--ap-m-quotation-tint)', ink: 'var(--ap-m-quotation-ink)', wash: 'var(--ap-m-quotation-wash)' },
+  specs:     { label: 'Specs',     icon: ListChecks,       tint: 'var(--ap-m-specs-tint)', ink: 'var(--ap-m-specs-ink)', wash: 'var(--ap-m-specs-wash)' },
+  mom:       { label: 'MOM',       icon: NotebookText,     tint: 'var(--ap-m-blue-tint)', ink: 'var(--ap-m-blue-ink)', wash: 'var(--ap-m-blue-wash)' },
+  workflow:  { label: 'Workflow',  icon: Workflow,         tint: 'var(--ap-m-blue-tint)', ink: 'var(--ap-m-blue-ink)', wash: 'var(--ap-m-blue-wash)' },
+  general:   { label: 'Brief',     icon: StickyNote,       tint: 'var(--ap-m-general-tint)', ink: 'var(--ap-m-general-ink)', wash: 'var(--ap-m-general-wash)' },
 }
 
 export const typeMeta = (type?: string | null): TypeMeta => TYPE_META[type ?? ''] ?? TYPE_META.general

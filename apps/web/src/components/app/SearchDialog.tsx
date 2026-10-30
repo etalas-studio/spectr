@@ -78,7 +78,7 @@ export function SearchDialog({
                 variant="ghost"
                 onMouseEnter={() => setActive(i)}
                 onClick={it.run}
-                className={`h-auto w-full justify-start gap-3 px-3 py-2.5 font-normal ${i === active ? 'bg-black/5' : ''}`}
+                className={`h-auto w-full justify-start gap-3 px-3 py-2.5 font-normal ${i === active ? 'bg-[rgb(var(--ap-ov,0_0_0)/0.05)]' : ''}`}
               >
                 <it.icon className="size-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate text-left">{it.label}</span>

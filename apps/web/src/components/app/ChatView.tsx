@@ -48,7 +48,7 @@ const stripThink = (s: string) => s.replace(/<think>[\s\S]*?<\/think>/g, '')
 function IconBtn({ label, onClick, disabled, children, active }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode; active?: boolean }) {
   return (
     <Button variant="ghost" size="icon-sm" title={label} aria-label={label} onClick={onClick} disabled={disabled}
-      className={`hover:bg-black/5 disabled:opacity-30 ${active ? 'text-primary' : 'text-black/40'}`}>
+      className={`hover:bg-[rgb(var(--ap-ov,0_0_0)/0.05)] disabled:opacity-30 ${active ? 'text-primary' : 'text-[var(--ap-ink-4,#6b7280)]'}`}>
       {children}
     </Button>
   )
@@ -90,10 +90,10 @@ function AttachmentTile({ attachment }: { attachment: Attachment }) {
   const ext = parts.length > 1 ? (parts.pop() ?? '').toUpperCase().slice(0, 4) : 'FILE'
   return (
     <Button variant="outline" render={<a href={attachment.url} target="_blank" rel="noreferrer" />} title={attachment.filename}
-      className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-white p-0">
+      className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-[var(--ap-surface,#fff)] p-0">
       {isImage
         ? <img src={attachment.url} alt={attachment.filename} className="size-full object-cover" />
-        : <span className="flex size-full items-center justify-center text-black/25"><FileIcon className="size-7" /></span>}
+        : <span className="flex size-full items-center justify-center text-[var(--ap-ink-4,#6b7280)]"><FileIcon className="size-7" /></span>}
       <Badge className="absolute right-1 bottom-1 rounded bg-black/65 px-1 py-0.5 text-[8px] font-bold text-white">{ext}</Badge>
     </Button>
   )
@@ -308,7 +308,7 @@ export default function ChatView({
                   )}
                   <div className={`${editingTurnIndex === ti ? 'w-full' : 'max-w-[78%]'} group flex flex-col items-end gap-1.5`}>
                     {editingTurnIndex === ti ? (
-                      <div className="w-full rounded-2xl border bg-white px-5 py-3 shadow-sm">
+                      <div className="w-full rounded-2xl border bg-[var(--ap-surface,#fff)] px-5 py-3 shadow-sm">
                         <Textarea
                           autoFocus
                           value={editValue}
@@ -322,7 +322,7 @@ export default function ChatView({
                           className="text-sm leading-relaxed"
                         />
                         <div className="mt-2 flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => setEditingTurnIndex(null)} className="text-gray-500">Cancel</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditingTurnIndex(null)} className="text-[var(--ap-ink-3,#5b6472)]">Cancel</Button>
                           <Button size="sm" variant="primary" onClick={() => handleSaveEdit(ti)}>{tr('dash_save_resend')}</Button>
                         </div>
                       </div>
@@ -331,7 +331,7 @@ export default function ChatView({
                     )}
                     {editingTurnIndex !== ti && (
                       <div className="flex items-center gap-1 px-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-                        <span className="mr-1 text-xs text-black/35">{timeAgo(createdAt, tr)}</span>
+                        <span className="mr-1 text-xs text-[var(--ap-ink-4,#6b7280)]">{timeAgo(createdAt, tr)}</span>
                         {isLast && <IconBtn label="Refresh response" onClick={handleRefreshResponse} disabled={streaming}><RefreshCw className="size-3.5" /></IconBtn>}
                         <IconBtn label="Edit" onClick={() => handleStartEdit(ti)}><Pencil className="size-3.5" /></IconBtn>
                         <IconBtn label="Copy" onClick={handleCopyPrompt} active={copied}>{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}</IconBtn>
@@ -357,7 +357,7 @@ export default function ChatView({
                   // Skip stale raw prototype generation outputs saved by older pipeline versions
                   if (m.isDone && m.output && !m.document && /Step\s+1[:\s]|cat\s*>\s*\/app\/prototype|CSSEOF|<< 'EOF'/.test(m.output)) return null
                   if (m.isDone && m.output && !m.document && /<!DOCTYPE html/i.test(m.output)) return (
-                    <p key={i} className="text-sm text-gray-500">Prototype berhasil dibuat. Buka panel Documents untuk melihat hasilnya.</p>
+                    <p key={i} className="text-sm text-[var(--ap-ink-3,#5b6472)]">Prototype berhasil dibuat. Buka panel Documents untuk melihat hasilnya.</p>
                   )
                   if (m.isDone && m.output) return (
                     <div key={i} className="group relative">
@@ -377,7 +377,7 @@ export default function ChatView({
                   return (
                     <div className="flex flex-col gap-2" role="status" aria-live="polite">
                       {stageMsg && !liveMsg && (
-                        <p className="text-xs text-gray-500">{stageMsg.stage! in STAGE_LABEL_KEYS ? tr(STAGE_LABEL_KEYS[stageMsg.stage!]) : stageMsg.stage}</p>
+                        <p className="text-xs text-[var(--ap-ink-3,#5b6472)]">{stageMsg.stage! in STAGE_LABEL_KEYS ? tr(STAGE_LABEL_KEYS[stageMsg.stage!]) : stageMsg.stage}</p>
                       )}
                       {liveMsg ? (
                         <div className="spectr-output ap-prose stream-live overflow-x-hidden break-words"
@@ -425,7 +425,7 @@ export default function ChatView({
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 px-4 pb-2">
               {attachments.map((a, i) => (
-                <Badge key={i} className="gap-1.5 rounded-lg px-2.5 py-1 text-gray-700">
+                <Badge key={i} className="gap-1.5 rounded-lg px-2.5 py-1 text-[var(--ap-ink-2,#374151)]">
                   {a.type.startsWith('image/') ? <img src={a.dataUrl} className="size-4 rounded object-cover" alt="" /> : <FileIcon className="size-3" />}
                   <span className="max-w-[100px] truncate">{a.name}</span>
                   <Button variant="ghost" size="icon-xs" className="size-4 opacity-40 hover:bg-transparent hover:opacity-100" onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))} aria-label="Remove attachment"><X className="size-3" /></Button>
@@ -438,7 +438,7 @@ export default function ChatView({
             <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             <Button variant="pill" size="icon-xl" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-4" /></Button>
             <Button variant="pill" className="h-10 gap-2 px-4" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-4" /> Attach image</Button>
-            <span className="ml-1 hidden text-xs text-gray-400 sm:block">↵ send</span>
+            <span className="ml-1 hidden text-xs text-[var(--ap-ink-4,#6b7280)] sm:block">↵ send</span>
             <Button
               variant="primary"
               size="send"

@@ -57,7 +57,7 @@ export default function DocumentReaderPanel({
             </span>
           )}
           <div className="min-w-0 flex-1">
-            {!fromArtifacts && <p className="text-[10px] leading-3.5 font-semibold tracking-[0.12em] text-gray-500 uppercase">{meta.label}</p>}
+            {!fromArtifacts && <p className="text-[10px] leading-3.5 font-semibold tracking-[0.12em] text-[var(--ap-ink-3,#5b6472)] uppercase">{meta.label}</p>}
             <SheetTitle>{doc?.title ?? 'Document'}</SheetTitle>
             {fromArtifacts && doc && <SheetDescription>{meta.label} · {date}</SheetDescription>}
           </div>
@@ -77,7 +77,7 @@ export default function DocumentReaderPanel({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {loading ? (
-            <p className="p-6 text-sm text-gray-400">Loading…</p>
+            <p className="p-6 text-sm text-[var(--ap-ink-4,#6b7280)]">Loading…</p>
           ) : error ? (
             <p className="p-6 text-sm text-destructive">Failed to load document.</p>
           ) : isPrototype ? (
@@ -94,7 +94,7 @@ export default function DocumentReaderPanel({
               <Button variant="outline" className="h-10 gap-2 rounded-[12px] px-4 text-sm font-semibold" render={<a href={previewSrc} target="_blank" rel="noreferrer" />}><ExternalLink /> Open in new tab</Button>
             ) : (
               <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold hover:bg-gray-50"><Download className="size-4" /> Download <ChevronDown className="size-3.5 text-gray-400" /></DropdownMenuTrigger>
+                <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl border bg-[var(--ap-surface,#fff)] px-4 text-sm font-semibold hover:bg-[rgb(var(--ap-ov,0_0_0)/0.04)]"><Download className="size-4" /> Download <ChevronDown className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></DropdownMenuTrigger>
                 <DropdownMenuContent side="top" align="start" className="w-44">
                   {DOWNLOAD_FORMATS.map((f) => (
                     <DropdownMenuItem key={f.ext} render={<a href={documentExportUrl(doc.id, f.ext)} download />}>{f.label}</DropdownMenuItem>

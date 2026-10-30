@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div data-slot="table-container" className="w-full overflow-x-auto rounded-xl border border-black/[0.08]">
+    <div data-slot="table-container" className="w-full overflow-x-auto rounded-xl border border-[rgb(var(--ap-ov,0_0_0)/0.08)]">
       <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   )
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
-  return <thead data-slot="table-header" className={cn("bg-black/[0.03]", className)} {...props} />
+  return <thead data-slot="table-header" className={cn("bg-[rgb(var(--ap-ov,0_0_0)/0.03)]", className)} {...props} />
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
@@ -22,7 +22,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
-      className={cn("border-b border-black/[0.06] transition-colors hover:bg-black/[0.02]", className)}
+      className={cn("border-b border-[rgb(var(--ap-ov,0_0_0)/0.06)] transition-colors hover:bg-[rgb(var(--ap-ov,0_0_0)/0.02)]", className)}
       {...props}
     />
   )
@@ -32,7 +32,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       data-slot="table-head"
-      className={cn("h-10 px-4 text-left align-middle text-xs font-semibold whitespace-nowrap text-gray-500", className)}
+      className={cn("h-10 px-4 text-left align-middle text-xs font-semibold whitespace-nowrap text-[var(--ap-ink-3,#5b6472)]", className)}
       {...props}
     />
   )
