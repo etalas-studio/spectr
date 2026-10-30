@@ -1,172 +1,96 @@
-import { useState } from 'react'
+'use client'
+import { useState, type ReactNode } from 'react'
 import { useLanguage, type Lang } from '../lib/i18n'
 import { useSubscription } from '../hooks/useSubscription'
+import { Crown, Settings2, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Switch } from '@/components/ui/switch'
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mb-4 rounded-2xl border bg-white px-6 pt-5 pb-3">
+      <h3 className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-gray-400 uppercase">{title}</h3>
+      <div className="divide-y divide-black/[0.06]">{children}</div>
+    </section>
+  )
+}
+
+function Row({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-[46px] items-center justify-between gap-4 py-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{title}</p>
+        {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null)
 
 export default function Settings({ onUpgrade }: { onUpgrade?: () => void }) {
   const { lang, setLang } = useLanguage()
-  const L = (en: string, id: string) => lang === 'id' ? id : en
+  const L = (en: string, id: string) => (lang === 'id' ? id : en)
   const { data: sub } = useSubscription()
-
   const isPro = sub?.planSlug === 'pro'
-  const expiresAt = sub?.expiresAt ? new Date(sub.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null
-  const startedAt = (sub as { startedAt?: string } | null | undefined)?.startedAt
-    ? new Date((sub as { startedAt: string }).startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : null
+  const expiresAt = fmt(sub?.expiresAt)
+  const startedAt = fmt(sub?.startedAt)
 
   const [emailNotif, setEmailNotif] = useState(true)
   const [docDoneNotif, setDocDoneNotif] = useState(true)
   const [compactMode, setCompactMode] = useState(false)
   const [autoSave, setAutoSave] = useState(true)
 
-  const sectionClass = 'rounded-2xl p-6 mb-4'
-  const sectionStyle = { backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.08)' }
-  const labelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#9ca3af', marginBottom: '16px', display: 'block' }
-  const rowClass = 'flex items-center justify-between py-3'
-  const dividerStyle: React.CSSProperties = { height: 1, backgroundColor: 'rgba(0,0,0,0.06)', margin: '0 0' }
-
-  function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
-    return (
-      <button
-        onClick={() => onChange(!on)}
-        className="relative shrink-0 transition-colors"
-        style={{ width: 40, height: 22, borderRadius: 999, backgroundColor: on ? '#3b82f6' : 'rgba(0,0,0,0.12)' }}>
-        <span className="absolute top-[3px] transition-all"
-          style={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', left: on ? 21 : 3 }} />
-      </button>
-    )
-  }
-
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6">
-      <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+    <div className="px-6 pt-2 pb-6">
+      <Section title="Subscription">
+        <Row title="Current plan">
+          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${isPro ? 'bg-primary/10 text-primary' : 'bg-black/[0.06] text-gray-500'}`}>{isPro ? 'Pro' : 'Starter'}</span>
+        </Row>
+        {startedAt && <Row title="Started"><span className="text-sm text-gray-500">{startedAt}</span></Row>}
+        {(isPro || expiresAt) && (
+          <Row title={sub?.expired ? 'Expired' : 'Renews'}>
+            <span className={`text-sm ${sub?.expired ? 'text-destructive' : 'text-gray-500'}`}>{expiresAt ?? '—'}</span>
+          </Row>
+        )}
+        <Row title={isPro ? 'Manage plan' : 'Upgrade to Pro'} sub={isPro ? 'Change or cancel your subscription' : 'Unlock unlimited documents & AI chat'}>
+          <Button size="sm" variant="primary" className="h-8 px-3 text-xs font-semibold" onClick={onUpgrade}>{isPro ? <Settings2 /> : <Crown />} {isPro ? 'Manage' : 'Upgrade'}</Button>
+        </Row>
+      </Section>
 
+      <section className="mb-4 rounded-2xl border bg-white p-6">
+        <h3 className="mb-4 text-[11px] font-semibold tracking-[0.08em] text-gray-400 uppercase">{L('Language', 'Bahasa')}</h3>
+        <ToggleGroup value={[lang]} onValueChange={(v) => { if (v[0]) setLang(v[0] as Lang) }}>
+          <ToggleGroupItem value="en">English</ToggleGroupItem>
+          <ToggleGroupItem value="id">Bahasa Indonesia</ToggleGroupItem>
+        </ToggleGroup>
+      </section>
 
-        {/* Subscription */}
-        <div className={sectionClass} style={sectionStyle}>
-          <span style={labelStyle}>Subscription</span>
+      <Section title={L('Notifications', 'Notifikasi')}>
+        <Row title={L('Email notifications', 'Notifikasi email')} sub={L('Receive updates via email', 'Terima update lewat email')}>
+          <Switch checked={emailNotif} onCheckedChange={setEmailNotif} aria-label={L('Email notifications', 'Notifikasi email')} />
+        </Row>
+        <Row title={L('Document ready alert', 'Alert dokumen selesai')} sub={L('Notify when AI finishes a document', 'Notif saat AI selesai bikin dokumen')}>
+          <Switch checked={docDoneNotif} onCheckedChange={setDocDoneNotif} aria-label={L('Document ready alert', 'Alert dokumen selesai')} />
+        </Row>
+      </Section>
 
-          <div className={rowClass}>
-            <p className="text-sm font-medium" style={{ color: '#111827' }}>Current plan</p>
-            <span className="text-sm font-semibold px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: isPro ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.06)', color: isPro ? '#3b82f6' : '#6b7280' }}>
-              {isPro ? 'Pro' : 'Starter'}
-            </span>
-          </div>
+      <Section title={L('Appearance', 'Tampilan')}>
+        <Row title={L('Compact mode', 'Mode kompak')} sub={L('Reduce spacing in lists and cards', 'Kurangi jarak di daftar dan kartu')}>
+          <Switch checked={compactMode} onCheckedChange={setCompactMode} aria-label={L('Compact mode', 'Mode kompak')} />
+        </Row>
+      </Section>
 
-          {startedAt && (
-            <>
-              <div style={dividerStyle} />
-              <div className={rowClass}>
-                <p className="text-sm font-medium" style={{ color: '#111827' }}>Started</p>
-                <p className="text-sm" style={{ color: '#6b7280' }}>{startedAt}</p>
-              </div>
-            </>
-          )}
-
-          {(isPro || expiresAt) && (
-            <>
-              <div style={dividerStyle} />
-              <div className={rowClass}>
-                <p className="text-sm font-medium" style={{ color: '#111827' }}>{sub?.expired ? 'Expired' : 'Renews'}</p>
-                <p className="text-sm" style={{ color: sub?.expired ? '#ef4444' : '#6b7280' }}>{expiresAt ?? '—'}</p>
-              </div>
-            </>
-          )}
-
-          <div style={dividerStyle} />
-          <div className={rowClass}>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#111827' }}>{isPro ? 'Manage plan' : 'Upgrade to Pro'}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{isPro ? 'Change or cancel your subscription' : 'Unlock unlimited documents & AI chat'}</p>
-            </div>
-            <button onClick={onUpgrade}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: '#3b82f6' }}>
-              {isPro ? 'Manage' : 'Upgrade'}
-            </button>
-          </div>
-        </div>
-
-        {/* Language */}
-        <div className={sectionClass} style={sectionStyle}>
-          <span style={labelStyle}>{L('Language', 'Bahasa')}</span>
-          <div className="flex gap-2">
-            {([['en', 'English'], ['id', 'Bahasa Indonesia']] as [Lang, string][]).map(([val, label]) => (
-              <button key={val} onClick={() => setLang(val)}
-                className="flex-1 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: lang === val ? '#3b82f6' : 'rgba(0,0,0,0.05)',
-                  color: lang === val ? '#fff' : '#374151',
-                }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Notifications */}
-        <div className={sectionClass} style={sectionStyle}>
-          <span style={labelStyle}>{L('Notifications', 'Notifikasi')}</span>
-
-          <div className={rowClass}>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#111827' }}>{L('Email notifications', 'Notifikasi email')}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{L('Receive updates via email', 'Terima update lewat email')}</p>
-            </div>
-            <Toggle on={emailNotif} onChange={setEmailNotif} />
-          </div>
-          <div style={dividerStyle} />
-          <div className={rowClass}>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#111827' }}>{L('Document ready alert', 'Alert dokumen selesai')}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{L('Notify when AI finishes a document', 'Notif saat AI selesai bikin dokumen')}</p>
-            </div>
-            <Toggle on={docDoneNotif} onChange={setDocDoneNotif} />
-          </div>
-        </div>
-
-        {/* Appearance */}
-        <div className={sectionClass} style={sectionStyle}>
-          <span style={labelStyle}>{L('Appearance', 'Tampilan')}</span>
-
-          <div className={rowClass}>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#111827' }}>{L('Compact mode', 'Mode kompak')}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{L('Reduce spacing in lists and cards', 'Kurangi jarak di daftar dan kartu')}</p>
-            </div>
-            <Toggle on={compactMode} onChange={setCompactMode} />
-          </div>
-        </div>
-
-        {/* Data & Privacy */}
-        <div className={sectionClass} style={sectionStyle}>
-          <span style={labelStyle}>{L('Data & Privacy', 'Data & Privasi')}</span>
-
-          <div className={rowClass}>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#111827' }}>{L('Auto-save drafts', 'Auto-simpan draft')}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{L('Automatically save input while typing', 'Otomatis simpan input saat mengetik')}</p>
-            </div>
-            <Toggle on={autoSave} onChange={setAutoSave} />
-          </div>
-          <div style={dividerStyle} />
-          <div className={rowClass}>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#111827' }}>{L('Clear local cache', 'Hapus cache lokal')}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{L('Remove locally saved conversations', 'Hapus percakapan yang tersimpan lokal')}</p>
-            </div>
-            <button
-              onClick={() => { localStorage.clear(); window.location.reload() }}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0"
-              style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#ef4444' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.15)')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.08)')}>
-              {L('Clear', 'Hapus')}
-            </button>
-          </div>
-        </div>
-
-      </div>
+      <Section title={L('Data & Privacy', 'Data & Privasi')}>
+        <Row title={L('Auto-save drafts', 'Auto-simpan draft')} sub={L('Automatically save input while typing', 'Otomatis simpan input saat mengetik')}>
+          <Switch checked={autoSave} onCheckedChange={setAutoSave} aria-label={L('Auto-save drafts', 'Auto-simpan draft')} />
+        </Row>
+        <Row title={L('Clear local cache', 'Hapus cache lokal')} sub={L('Remove locally saved conversations', 'Hapus percakapan yang tersimpan lokal')}>
+          <Button variant="destructive" size="sm" className="h-8 rounded-[12px] px-3 text-xs font-semibold" onClick={() => { localStorage.clear(); window.location.reload() }}><Trash2 /> {L('Clear', 'Hapus')}</Button>
+        </Row>
+      </Section>
     </div>
   )
 }

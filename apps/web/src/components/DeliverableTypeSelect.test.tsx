@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event'
 import { DeliverableTypeSelect } from './DeliverableTypeSelect'
 
 describe('DeliverableTypeSelect', () => {
-  it('renders the Auto label for empty value', () => {
+  it('shows the Document type prompt for empty value', () => {
     render(<DeliverableTypeSelect value="" onChange={vi.fn()} />)
-    expect(screen.getByRole('combobox')).toHaveTextContent('Auto')
+    expect(screen.getByRole('combobox')).toHaveTextContent('Document type')
   })
 
   it('renders the label for a selected deliverable', () => {

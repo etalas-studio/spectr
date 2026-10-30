@@ -102,13 +102,23 @@ export interface AdminStatsPayment {
   planSlug: string | null
   grossAmount: string
   transactionStatus: string
+  localStatus: string
+  status: 'settled' | 'pending' | 'failed'
   fraudStatus: string | null
   createdAt: string
+}
+
+export interface MonthlyTrendPoint {
+  month: string
+  totalUsers: number
+  newUsers: number
+  settledPayments: number
 }
 
 export interface TopUser {
   email: string
   username: string
+  avatarUrl?: string | null
   totalUsage: number
 }
 
@@ -117,10 +127,23 @@ export interface RevenueTrendPoint {
   revenue: number
 }
 
+export type HealthStatus = 'ok' | 'degraded' | 'down'
+
+export interface HealthCheck {
+  id: string
+  name: string
+  status: HealthStatus
+  detail: string
+  latencyMs?: number
+}
+
 export interface AdminHealth {
   ok: boolean
+  status: HealthStatus
+  score: number
   dbMs: number
   uptimeSeconds: number
+  checks: HealthCheck[]
 }
 
 export interface AdminStats {
@@ -137,6 +160,7 @@ export interface AdminStats {
   newUsersLastMonth: number
   topUsersByUsage?: TopUser[]
   revenueTrend?: RevenueTrendPoint[]
+  monthlyTrends?: MonthlyTrendPoint[]
 }
 
 export interface AdminUser {

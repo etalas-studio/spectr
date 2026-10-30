@@ -74,7 +74,7 @@ export default function PaymentReturn() {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
     backgroundColor: '#F4EBE1',
   } as const
 

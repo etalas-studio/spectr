@@ -179,7 +179,7 @@ function PaymentTrigger({
 
   if (isDone) {
     return (
-      <div className="min-h-screen flex items-center justify-center antialiased" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#F4EBE1' }}>
+      <div className="min-h-screen flex items-center justify-center antialiased" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", backgroundColor: '#F4EBE1' }}>
         <div className="w-full max-w-sm mx-4 text-center">
           <div className="flex justify-center mb-6">
             <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f91814' }}>
@@ -198,7 +198,7 @@ function PaymentTrigger({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center antialiased px-4" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#F4EBE1' }}>
+      <div className="min-h-screen flex items-center justify-center antialiased px-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", backgroundColor: '#F4EBE1' }}>
         <div className="w-full max-w-sm text-center">
           <div className="flex justify-center mb-6">
             <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f91814' }}>

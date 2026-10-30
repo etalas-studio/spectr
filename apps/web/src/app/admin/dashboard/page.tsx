@@ -2,13 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { CreditCard, Crown, FileText, Wallet, ArrowLeftRight, LineChart, Server, TriangleAlert, UserPlus, UsersRound, BarChart3, CalendarDays, CalendarRange, CircleCheck, CircleX, Check, Clock, Ellipsis, EllipsisVertical, Info, RefreshCw, LayoutGrid, type LucideIcon } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import {
   fetchAdminStats, fetchAdminHealth,
-  type AdminStats, type AdminStatsPayment, type TopUser, type RevenueTrendPoint, type AdminHealth,
+  type AdminStats, type AdminStatsPayment, type TopUser, type RevenueTrendPoint, type AdminHealth, type HealthStatus,
 } from '../../../api/admin'
 
 const css = `
@@ -37,19 +42,19 @@ function Card({ children, delay = 0, className = '' }: {
   children: React.ReactNode; delay?: number; className?: string
 }) {
   return (
-    <div className={`fade-up rounded-2xl bg-white p-5 ${className}`}
-      style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', animationDelay: `${delay}ms` }}>
+    <div className={`fade-up rounded-2xl border border-black/[0.08] bg-white p-5 ${className}`}
+      style={{ animationDelay: `${delay}ms` }}>
       {children}
     </div>
   )
 }
 
-function CardHeader({ icon, title, right }: { icon: string; title: string; right?: React.ReactNode }) {
+function CardHeader({ icon: Icon, title, right }: { icon: LucideIcon; title: string; right?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
-        <iconify-icon icon={icon} width="15" style={{ color: '#9ca3af' }} />
-        <span className="text-sm font-semibold" style={{ color: '#111827' }}>{title}</span>
+        <Icon className="size-[15px] text-gray-400" />
+        <span className="text-sm font-semibold text-[#111827]">{title}</span>
       </div>
       {right && <div>{right}</div>}
     </div>
@@ -58,32 +63,13 @@ function CardHeader({ icon, title, right }: { icon: string; title: string; right
 
 function SeeAll({ href }: { href: string }) {
   return (
-    <Link href={href} className="text-xs font-medium transition-colors"
-      style={{ color: '#9ca3af' }}
-      onMouseEnter={e => (e.currentTarget.style.color = '#3b82f6')}
-      onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}>
+    <Link href={href} className="text-xs font-medium text-gray-400 transition-colors hover:text-[#265ee4]">
       See All
     </Link>
   )
 }
 
-function PeriodPills({ options, value, onChange }: {
-  options: string[]; value: string; onChange: (v: string) => void
-}) {
-  return (
-    <div className="flex gap-0.5 rounded-lg p-0.5" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-      {options.map(o => (
-        <button key={o} onClick={() => onChange(o)}
-          className="px-2.5 py-1 rounded-md text-xs font-medium transition-all"
-          style={o === value
-            ? { background: '#fff', color: '#111827', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
-            : { background: 'transparent', color: '#9ca3af' }}>
-          {o}
-        </button>
-      ))}
-    </div>
-  )
-}
+const PTAB_ICON: Record<string, LucideIcon> = { All: LayoutGrid, Settled: CircleCheck, Pending: Clock, Failed: CircleX }
 
 function DeltaBadge({ n, suffix = '%' }: { n: number; suffix?: string }) {
   const up = n >= 0
@@ -96,11 +82,11 @@ function DeltaBadge({ n, suffix = '%' }: { n: number; suffix?: string }) {
 
 function StatusPill({ s }: { s: string }) {
   const map: Record<string, string> = {
-    settlement: 'bg-emerald-50 text-emerald-600',
-    pending:    'bg-amber-50 text-amber-600',
-    failure:    'bg-red-50 text-red-500',
+    settled: 'bg-emerald-50 text-emerald-600',
+    pending: 'bg-amber-50 text-amber-600',
+    failed:  'bg-red-50 text-red-500',
   }
-  const label: Record<string, string> = { settlement: 'Settled', pending: 'Pending', failure: 'Failed' }
+  const label: Record<string, string> = { settled: 'Settled', pending: 'Pending', failed: 'Failed' }
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${map[s] ?? 'bg-gray-100 text-gray-500'}`}>
       {label[s] ?? s}
@@ -129,98 +115,158 @@ function DarkTip({ active, payload, label, fmt }: {
 }
 
 // ─── 1. Stat tile ─────────────────────────────────────────────────────────────
-function StatTile({ label, value, icon, delta, sub, delay = 0 }: {
-  label: string; value: string | number; icon: string
-  delta?: number; sub?: string; delay?: number
+const BLUE = '#265ee4'
+const BLUE_SOFT = '#bcd0f8'
+
+function MiniBars({ values, count = 7 }: { values: number[]; count?: number }) {
+  // Always render `count` bars so the tile never looks empty: pad with zeros and give zero values a small stub.
+  const padded = [...Array(Math.max(0, count - values.length)).fill(0), ...values.slice(-count)]
+  const max = Math.max(...padded, 0)
+  const data = padded.map((v, i) => ({ i, v: max > 0 ? Math.max(v, max * 0.14) : 1 }))
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }} barCategoryGap={3}>
+        <Bar dataKey="v" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+          {data.map((d) => <Cell key={d.i} fill={d.i % 2 === 1 ? BLUE : BLUE_SOFT} />)}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+function MiniLine({ values, count = 6 }: { values: number[]; count?: number }) {
+  // Pad with zeros so there is always a line to draw, even with a single data point.
+  const padded = [...Array(Math.max(0, count - values.length)).fill(0), ...values.slice(-count)]
+  const data = padded.map((v, i) => ({ i, v }))
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data} margin={{ top: 6, right: 2, left: 2, bottom: 2 }}>
+        <defs>
+          <linearGradient id="mini-line" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={BLUE} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={BLUE} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey="v" stroke={BLUE} strokeWidth={1.75} fill="url(#mini-line)" dot={false} isAnimationActive={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+function StatTile({ label, value, icon: Icon, caption, chart, delta, delay = 0 }: {
+  label: string; value: string | number; icon: LucideIcon
+  caption?: string; chart?: React.ReactNode; delta?: number; delay?: number
 }) {
   return (
-    <Card delay={delay}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <iconify-icon icon={icon} width="13" style={{ color: '#9ca3af' }} />
-          <span className="text-[11px] font-medium" style={{ color: '#9ca3af' }}>{label}</span>
-        </div>
-        {delta !== undefined && <DeltaBadge n={delta} suffix="" />}
+    <Card delay={delay} className="!rounded-[20px] !p-5">
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex items-center gap-2 text-[17px] leading-6 font-medium text-gray-400">
+          {label}
+          <Info className="size-4 shrink-0" aria-hidden />
+        </span>
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-[12px] border border-black/[0.08] text-[#265ee4]">
+          <Icon className="size-5" />
+        </span>
       </div>
-      <div className="text-2xl font-bold tracking-tight" style={{ color: '#111827' }}>{value}</div>
-      {sub && <div className="mt-1 text-[11px]" style={{ color: '#9ca3af' }}>{sub}</div>}
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-2xl leading-9 font-semibold tracking-tight whitespace-nowrap text-[#111827]">{value}</div>
+        </div>
+        {chart && <div className="h-14 w-24 shrink-0">{chart}</div>}
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
+        {delta !== undefined && <DeltaBadge n={delta} suffix="" />}
+        {caption && <span className="truncate">{caption}</span>}
+      </div>
     </Card>
   )
 }
 
 // ─── 2. Revenue tracker ───────────────────────────────────────────────────────
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 function RevenueTracker({ trend, thisMonth, delay = 0 }: {
   trend: RevenueTrendPoint[]; thisMonth: number; delay?: number
 }) {
   const [period, setPeriod] = useState('6M')
   const n = period === '1M' ? 1 : period === '3M' ? 3 : 6
-  const data = trend.slice(-n).map(t => ({ name: t.month.slice(5), value: t.revenue }))
+  // Fill the last `n` calendar months (zero where the API has no row) so the axis always looks complete.
+  const byMonth = new Map(trend.map(t => [t.month.slice(0, 7), t.revenue]))
+  const now = new Date()
+  const data = Array.from({ length: n }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (n - 1 - i), 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    return { name: MONTHS[d.getMonth()], value: byMonth.get(key) ?? 0 }
+  })
   const last = data[data.length - 1]?.value ?? 0
   const prev = data[data.length - 2]?.value ?? 0
   const delta = prev > 0 ? Math.round(((last - prev) / prev) * 100) : null
 
   return (
-    <Card delay={delay} className="h-full">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <iconify-icon icon="solar:graph-up-linear" width="15" style={{ color: '#9ca3af' }} />
-          <span className="text-sm font-semibold" style={{ color: '#111827' }}>Revenue Tracker</span>
-        </div>
-        <PeriodPills options={['1M', '3M', '6M']} value={period} onChange={setPeriod} />
+    <Card delay={delay} className="h-full !rounded-[20px] !p-5">
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex items-center gap-2 text-[20px] leading-7 font-medium text-gray-400">
+          Revenue Tracker
+          <Info className="size-4 shrink-0" aria-hidden />
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Chart range" className="text-[#111827]" />}>
+            <EllipsisVertical />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40 rounded-[12px] p-1.5">
+            {['1M', '3M', '6M'].map(o => (
+              <DropdownMenuItem key={o} onClick={() => setPeriod(o)} className="h-9 gap-2">
+                <CalendarRange /> Last {o === '1M' ? 'month' : o.replace('M', ' months')}
+                {period === o && <Check className="ml-auto" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <div className="flex items-baseline gap-2 mb-0.5">
-        <span className="text-3xl font-bold tracking-tight" style={{ color: '#111827' }}>{formatRp(thisMonth)}</span>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-[28px] leading-9 font-semibold tracking-tight text-[#111827]">{formatRp(thisMonth)}</span>
         {delta !== null && <DeltaBadge n={delta} />}
       </div>
-      <p className="text-[11px] mb-5" style={{ color: '#9ca3af' }}>This month · settled payments only</p>
-      {data.length >= 2 ? (
-        <ResponsiveContainer width="100%" height={130}>
-          <AreaChart data={data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-            <defs>
-              <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={formatK} />
-            <Tooltip content={<DarkTip fmt={formatRp} />} />
-            <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2}
-              fill="url(#rg)" dot={false} activeDot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="flex h-[130px] items-center justify-center text-xs" style={{ color: '#9ca3af' }}>
-          Not enough data yet
-        </div>
-      )}
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <span className="inline-flex items-center gap-2 text-sm text-[#111827]">
+          <span className="h-3 w-6 rounded-full" style={{ background: BLUE }} />Latest month
+        </span>
+        <span className="inline-flex items-center gap-2 text-sm text-[#111827]">
+          <span className="h-3 w-6 rounded-full" style={{ background: BLUE_SOFT }} />Previous months
+        </span>
+      </div>
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart data={data} margin={{ top: 16, right: 4, left: 0, bottom: 0 }} barCategoryGap="22%">
+          <CartesianGrid vertical={false} stroke="rgba(17,24,39,0.07)" />
+          <XAxis dataKey="name" tick={{ fontSize: 13, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 13, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={formatK} width={54} />
+          <Tooltip cursor={{ fill: 'rgba(17,24,39,0.04)' }} content={<DarkTip fmt={formatRp} />} />
+          <Bar dataKey="value" radius={[10, 10, 10, 10]} minPointSize={6} isAnimationActive={false}>
+            {data.map((d, i) => <Cell key={d.name + i} fill={i === data.length - 1 ? BLUE : BLUE_SOFT} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </Card>
   )
 }
 
 // ─── 3. Recent payments ───────────────────────────────────────────────────────
 const PTABS = ['All', 'Settled', 'Pending', 'Failed']
-const PMAP: Record<string, string> = { Settled: 'settlement', Pending: 'pending', Failed: 'failure' }
+const PMAP: Record<string, AdminStatsPayment['status']> = { Settled: 'settled', Pending: 'pending', Failed: 'failed' }
 
 function RecentPayments({ payments, delay = 0 }: { payments: AdminStatsPayment[]; delay?: number }) {
   const [tab, setTab] = useState('All')
-  const list = (tab === 'All' ? payments : payments.filter(p => p.transactionStatus === PMAP[tab])).slice(0, 5)
+  const list = (tab === 'All' ? payments : payments.filter(p => p.status === PMAP[tab])).slice(0, 5)
 
   return (
     <Card delay={delay} className="h-full">
-      <CardHeader icon="solar:card-linear" title="Recent Payments" right={<SeeAll href="/admin/payments" />} />
+      <CardHeader icon={CreditCard} title="Recent Payments" right={<SeeAll href="/admin/payments" />} />
       {/* tabs */}
-      <div className="flex gap-0.5 rounded-lg p-0.5 mb-4" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
-        {PTABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className="flex-1 py-1 rounded-md text-[11px] font-medium transition-all"
-            style={t === tab
-              ? { background: '#fff', color: '#111827', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
-              : { background: 'transparent', color: '#9ca3af' }}>
-            {t}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-4">
+        <TabsList className="w-full gap-0.5 rounded-[12px] p-0.5">
+          {PTABS.map(t => { const I = PTAB_ICON[t]; return <TabsTrigger key={t} value={t} className="h-8 flex-1 rounded-[10px] px-0 text-xs"><I className="size-3.5" />{t}</TabsTrigger> })}
+        </TabsList>
+      </Tabs>
       {list.length === 0 ? (
         <p className="py-6 text-center text-xs" style={{ color: '#9ca3af' }}>No payments found.</p>
       ) : (
@@ -229,8 +275,8 @@ function RecentPayments({ payments, delay = 0 }: { payments: AdminStatsPayment[]
             <div key={p.orderId} className="flex items-center gap-3 py-2.5"
               style={{ borderTop: i > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-                style={{ backgroundColor: 'rgba(59,130,246,0.08)' }}>
-                <iconify-icon icon="solar:card-transfer-linear" width="14" style={{ color: '#3b82f6' }} />
+                style={{ backgroundColor: 'rgba(38,94,228,0.1)' }}>
+                <ArrowLeftRight className="size-3.5 text-[#265ee4]" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate" style={{ color: '#111827' }}>
@@ -240,9 +286,9 @@ function RecentPayments({ payments, delay = 0 }: { payments: AdminStatsPayment[]
                   {new Date(p.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                 </div>
               </div>
-              <div className="text-right shrink-0 space-y-0.5">
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <StatusPill s={p.status} />
                 <div className="text-xs font-semibold" style={{ color: '#111827' }}>{formatRp(Number(p.grossAmount))}</div>
-                <StatusPill s={p.transactionStatus} />
               </div>
             </div>
           ))}
@@ -252,74 +298,89 @@ function RecentPayments({ payments, delay = 0 }: { payments: AdminStatsPayment[]
   )
 }
 
-// ─── 4. Plan distribution (half-donut) ───────────────────────────────────────
+// ─── 4. Plan distribution (donut) ─────────────────────────────────────────────
 function PlanBreakdown({ total, pro, delay = 0 }: { total: number; pro: number; delay?: number }) {
   const free = Math.max(0, total - pro)
-  const pct = total > 0 ? Math.round((pro / total) * 100) : 0
-  const donut = [{ value: pro || 0.001 }, { value: free || 0.001 }]
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0)
+  const rows = [
+    { label: 'Pro', count: pro, color: BLUE },
+    { label: 'Free', count: free, color: BLUE_SOFT },
+  ]
+  const donut = total > 0 ? rows.map(r => ({ name: r.label, value: r.count, fill: r.color })) : [{ name: 'Empty', value: 1, fill: '#e5e7eb' }]
 
   return (
-    <Card delay={delay}>
-      <CardHeader icon="solar:crown-linear" title="Plan Distribution" />
-      <div className="flex flex-col items-center">
-        {/* half donut */}
-        <div style={{ width: 160, height: 88, position: 'relative' }}>
-          <PieChart width={160} height={88}>
-            <Pie data={donut} cx={75} cy={84} startAngle={180} endAngle={0}
-              innerRadius={48} outerRadius={68} dataKey="value" stroke="none">
-              <Cell fill="#f59e0b" />
-              <Cell fill="#e5e7eb" />
+    <Card delay={delay} className="!rounded-[20px] !p-5">
+      <ChartHeader
+        title="Plan Distribution"
+        subtitle="Pro vs free users"
+        right={
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="outline" size="icon-lg" aria-label="Plan actions" className="size-10 rounded-full" />}>
+              <Ellipsis />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 rounded-[12px] p-1.5">
+              <DropdownMenuItem render={<Link href="/admin/users" />} className="h-9 gap-2"><UsersRound /> View users</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      />
+      <div className="relative mx-auto mt-4 h-[200px] w-[200px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={donut} dataKey="value" nameKey="name" innerRadius="68%" outerRadius="100%" startAngle={90} endAngle={-270}
+              paddingAngle={total > 0 && pro > 0 && free > 0 ? 4 : 0} cornerRadius={10} stroke="none" isAnimationActive={false}>
+              {donut.map(d => <Cell key={d.name} fill={d.fill} />)}
             </Pie>
           </PieChart>
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center' }}>
-            <span style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>{pct}%</span>
+        </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[34px] leading-10 font-semibold tracking-tight text-[#111827]">{pct(pro)}%</span>
+          <span className="text-base text-gray-500">Pro users</span>
+        </div>
+      </div>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+        {rows.map(r => (
+          <div key={r.label} className="flex items-center gap-2.5">
+            <span className="size-3.5 shrink-0 rounded-[4px]" style={{ background: r.color }} />
+            <span className="text-sm text-[#111827]">{r.label}</span>
+            <span className="text-sm text-gray-500">{pct(r.count)}%</span>
           </div>
-        </div>
-        <p className="text-[11px] mt-1.5 mb-4" style={{ color: '#9ca3af' }}>Pro conversion rate</p>
-        <div className="w-full space-y-2.5">
-          {[{ label: 'Pro', count: pro, color: '#f59e0b' }, { label: 'Free', count: free, color: '#e5e7eb' }].map(row => (
-            <div key={row.label} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: row.color }} />
-                <span className="text-xs" style={{ color: '#6b7280' }}>{row.label}</span>
-              </div>
-              <span className="text-xs font-semibold" style={{ color: '#111827' }}>{row.count.toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </Card>
   )
 }
 
 // ─── 5. Top users ─────────────────────────────────────────────────────────────
-const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#f97316']
+const AVATAR_COLORS = ['#265ee4', '#8b5cf6', '#f59e0b', '#10b981', '#f97316']
 
 function TopUsers({ users, delay = 0 }: { users: TopUser[]; delay?: number }) {
   const max = Math.max(...users.map(u => u.totalUsage), 1)
   return (
     <Card delay={delay}>
-      <CardHeader icon="solar:users-group-rounded-linear" title="Top Users" right={<SeeAll href="/admin/users" />} />
+      <CardHeader icon={UsersRound} title="Top Users" right={<SeeAll href="/admin/users" />} />
       {users.length === 0 ? (
         <p className="py-6 text-center text-xs" style={{ color: '#9ca3af' }}>No usage data yet.</p>
       ) : (
         <div>
           {users.map((u, i) => (
-            <div key={u.email} className="flex items-center gap-3 py-2.5"
+            <div key={u.email} className="flex items-center gap-3 py-2"
               style={{ borderTop: i > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-[11px] font-bold"
-                style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
-                {(u.username || u.email).charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate" style={{ color: '#111827' }}>
+              <Avatar className="size-9">
+                {u.avatarUrl && <AvatarImage src={u.avatarUrl} alt="" />}
+                <AvatarFallback className="text-sm text-white" style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                  {(u.username || u.email).charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-[#111827]">
                   {u.username || u.email.split('@')[0]}
                 </div>
-                <div className="mt-1.5 h-1 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.07)' }}>
-                  <div className="h-full rounded-full bg-blue-400" style={{ width: `${(u.totalUsage / max) * 100}%` }} />
+                <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-black/[0.07]">
+                  <div className="h-full rounded-full bg-[#265ee4]" style={{ width: `${(u.totalUsage / max) * 100}%` }} />
                 </div>
               </div>
-              <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: '#111827' }}>{u.totalUsage}</span>
+              <span className="ml-2 w-10 shrink-0 text-right text-sm font-semibold text-[#111827]">{u.totalUsage}</span>
             </div>
           ))}
         </div>
@@ -331,87 +392,124 @@ function TopUsers({ users, delay = 0 }: { users: TopUser[]; delay?: number }) {
 // ─── 6. System health ─────────────────────────────────────────────────────────
 type HealthState = { status: 'loading' } | { status: 'error' } | { status: 'ok'; data: AdminHealth }
 
-function SystemHealth({ health, delay = 0 }: { health: HealthState; delay?: number }) {
-  const fmtUp = (s: number) => {
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
-    return h > 0 ? `${h}h ${m}m` : `${m}m`
-  }
+// Semicircle of rounded radial dashes; the first `pct`% are filled.
+function DashGauge({ pct, color }: { pct: number; color: string }) {
+  const N = 13
+  const filled = Math.round((pct / 100) * N)
+  const cx = 100, cy = 100, r1 = 62, r2 = 92
   return (
-    <Card delay={delay}>
-      <CardHeader icon="solar:server-minimalistic-linear" title="System Health" />
-      {health.status === 'loading' && <p className="text-xs py-4" style={{ color: '#9ca3af' }}>Checking…</p>}
-      {health.status === 'error' && (
-        <div className="flex items-center gap-2 py-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
-          <span className="text-sm font-medium text-red-500">Service unreachable</span>
+    <svg viewBox="0 0 200 108" className="h-full w-full" aria-hidden>
+      {Array.from({ length: N }, (_, i) => {
+        const a = Math.PI - (i / (N - 1)) * Math.PI
+        const x1 = cx + r1 * Math.cos(a), y1 = cy - r1 * Math.sin(a)
+        const x2 = cx + r2 * Math.cos(a), y2 = cy - r2 * Math.sin(a)
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={i < filled ? color : '#eceef2'} strokeWidth={10} strokeLinecap="round" />
+      })}
+    </svg>
+  )
+}
+
+const HEALTH_COLOR: Record<HealthStatus, string> = { ok: '#10b981', degraded: '#f59e0b', down: '#ef4444' }
+
+function SystemHealth({ health, onRefresh, delay = 0 }: { health: HealthState; onRefresh: () => void; delay?: number }) {
+  const fmtUp = (s: number) => {
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60)
+    return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`
+  }
+  const data = health.status === 'ok' ? health.data : null
+  const pct = data?.score ?? 0
+  const color = data ? HEALTH_COLOR[data.status] : '#ef4444'
+  const subtitle = health.status === 'error' ? 'Service unreachable'
+    : !data ? 'Checking…'
+    : data.status === 'ok' ? 'All systems operational'
+    : data.status === 'degraded' ? 'Some systems degraded'
+    : 'Some systems down'
+  return (
+    <Card delay={delay} className="flex flex-col !rounded-[20px] !p-5">
+      <ChartHeader
+        title="System Health"
+        subtitle={subtitle}
+        right={
+          <Button variant="outline" size="icon-lg" aria-label="Refresh health" className="size-10 rounded-full" onClick={onRefresh}>
+            <RefreshCw />
+          </Button>
+        }
+      />
+      <div className="relative mx-auto mt-3 h-[124px] w-[230px]">
+        <DashGauge pct={pct} color={color} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
+          <span className="text-[30px] leading-9 font-semibold tracking-tight text-[#111827]">{data ? `${pct}%` : '-'}</span>
         </div>
-      )}
-      {health.status === 'ok' && (
-        <>
-          <div className="flex items-center gap-2 mb-4 rounded-xl py-2.5 px-3" style={{ backgroundColor: 'rgba(16,185,129,0.07)' }}>
-            <span className="glow inline-block h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
-            <span className="text-xs font-semibold text-emerald-600">All systems operational</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {[
-              { label: 'DB Latency', value: `${health.data.dbMs}ms` },
-              { label: 'Uptime', value: fmtUp(health.data.uptimeSeconds) },
-            ].map(m => (
-              <div key={m.label} className="rounded-xl p-3 text-center" style={{ backgroundColor: 'rgba(0,0,0,0.03)' }}>
-                <div className="text-[11px] mb-1" style={{ color: '#9ca3af' }}>{m.label}</div>
-                <div className="text-lg font-bold" style={{ color: '#111827' }}>{m.value}</div>
-              </div>
-            ))}
-          </div>
-          <div>
-            <div className="flex justify-between text-[11px] mb-1.5" style={{ color: '#9ca3af' }}>
-              <span>Availability</span><span>100%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.07)' }}>
-              <div className="h-full w-full rounded-full bg-emerald-400" />
-            </div>
-          </div>
-        </>
-      )}
+      </div>
+      <p className="mt-1 text-center text-sm text-gray-500">Health score{data ? ` · up ${fmtUp(data.uptimeSeconds)}` : ''}</p>
+      <ul className="mt-auto space-y-2 pt-4">
+        {(data?.checks ?? []).map(c => (
+          <li key={c.id} className="flex items-center gap-2.5 text-sm">
+            <span className="size-2 shrink-0 rounded-full" style={{ background: HEALTH_COLOR[c.status] }} aria-label={c.status} />
+            <span className="font-medium text-[#111827]">{c.name}</span>
+            <span className="ml-auto truncate text-xs text-gray-400" title={c.detail}>{c.detail}</span>
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }
 
 // ─── 7. Usage breakdown ───────────────────────────────────────────────────────
+type BarDatum = { name: string; value: number; fill: string }
+
+function ChartHeader({ title, subtitle, right }: { title: string; subtitle: string; right: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h3 className="text-base leading-6 font-semibold text-[#111827]">{title}</h3>
+        <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>
+      </div>
+      {right}
+    </div>
+  )
+}
+
+function RangeChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[12px] border border-black/[0.1] bg-white px-3.5 text-sm font-medium text-[#111827] shadow-[0_1px_2px_rgba(17,24,39,0.06)]">
+      <CalendarDays className="size-4" />{label}
+    </span>
+  )
+}
+
+// Dashed grid, rounded bars sitting on a light track, dot legend underneath.
+function TrackBars({ data, height = 200, barSize = 44 }: { data: BarDatum[]; height?: number; barSize?: number }) {
+  return (
+    <>
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} barSize={barSize} margin={{ top: 16, right: 4, left: 0, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke="rgba(17,24,39,0.12)" strokeDasharray="4 4" />
+          <XAxis dataKey="name" tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} tickFormatter={formatK} width={40} allowDecimals={false} />
+          <Tooltip content={<DarkTip />} cursor={false} />
+          <Bar dataKey="value" radius={[5, 5, 0, 0]} minPointSize={4} isAnimationActive={false}
+            background={{ fill: 'rgba(38,94,228,0.08)', radius: [5, 5, 0, 0] as unknown as number }}>
+            {data.map((d) => <Cell key={d.name} fill={d.fill} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </>
+  )
+}
+
 function UsageBreakdown({ doc, prototype, chat, delay = 0 }: {
   doc: number; prototype: number; chat: number; delay?: number
 }) {
-  const rows = [
-    { label: 'Documents', value: doc, color: '#3b82f6' },
-    { label: 'Prototypes', value: prototype, color: '#a855f7' },
-    { label: 'Chat', value: chat, color: '#10b981' },
+  const data: BarDatum[] = [
+    { name: 'Documents', value: doc, fill: BLUE },
+    { name: 'Prototypes', value: prototype, fill: '#7c9cf0' },
+    { name: 'Chat', value: chat, fill: BLUE_SOFT },
   ]
-  const max = Math.max(...rows.map(r => r.value), 1)
   return (
-    <Card delay={delay}>
-      <CardHeader icon="solar:chart-2-linear" title="Usage Breakdown" right={<ChipLabel>This month</ChipLabel>} />
-      <div className="space-y-4">
-        {rows.map(r => (
-          <div key={r.label}>
-            <div className="flex justify-between text-xs mb-2">
-              <span style={{ color: '#6b7280' }}>{r.label}</span>
-              <span className="font-semibold" style={{ color: '#111827' }}>{r.value.toLocaleString()}</span>
-            </div>
-            <div className="h-2.5 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.07)' }}>
-              <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${(r.value / max) * 100}%`, backgroundColor: r.color }} />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 pt-3 flex gap-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-        {rows.map(r => (
-          <div key={r.label} className="flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: r.color }} />
-            <span className="text-[11px]" style={{ color: '#9ca3af' }}>{r.label}</span>
-          </div>
-        ))}
-      </div>
+    <Card delay={delay} className="!rounded-[20px] !p-5">
+      <ChartHeader title="Usage Breakdown" subtitle="Generations by type" right={<RangeChip label="This month" />} />
+      <TrackBars data={data} />
     </Card>
   )
 }
@@ -421,24 +519,31 @@ function DocsByType({ prd, quotation, prototype, specs, delay = 0 }: {
   prd: number; quotation: number; prototype: number; specs: number; delay?: number
 }) {
   const data = [
-    { name: 'PRD', value: prd, fill: '#38bdf8' },
-    { name: 'Quotation', value: quotation, fill: '#818cf8' },
-    { name: 'Prototype', value: prototype, fill: '#f472b6' },
-    { name: 'Specs', value: specs, fill: '#fb923c' },
+    { name: 'PRD', value: prd, fill: '#7b93f5' },
+    { name: 'Quotation', value: quotation, fill: '#9dd8f9' },
+    { name: 'Prototype', value: prototype, fill: '#bfaef8' },
+    { name: 'Specs', value: specs, fill: '#b9e0dc' },
   ]
+  const total = data.reduce((sum, d) => sum + d.value, 0)
   return (
-    <Card delay={delay}>
-      <CardHeader icon="solar:document-linear" title="Documents by Type" right={<ChipLabel>All-time</ChipLabel>} />
-      <ResponsiveContainer width="100%" height={148}>
-        <BarChart data={data} layout="vertical" barSize={12} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-          <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={formatK} />
-          <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={64} />
-          <Tooltip content={<DarkTip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-            {data.map((d, i) => <Cell key={i} fill={d.fill} fillOpacity={0.85} />)}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <Card delay={delay} className="flex flex-col">
+      <CardHeader icon={FileText} title="Documents by Type" right={<ChipLabel>All-time</ChipLabel>} />
+      {/* One segmented bar: each column's width follows its share of all documents. */}
+      <div className="flex flex-1 items-center gap-2">
+        {data.map(d => {
+          const share = total > 0 ? d.value / total : 1 / data.length
+          return (
+            <div key={d.name} className="min-w-[80px]" style={{ flex: `${Math.max(share, 0.08)} 1 0%` }}>
+              <p className="truncate text-sm text-[#111827]">{d.name}</p>
+              <div className="mt-1.5 flex items-center gap-2 border-l-2 pl-2" style={{ borderColor: d.fill }}>
+                <span className="text-sm font-semibold text-[#111827]">{d.value.toLocaleString()}</span>
+                <span className="text-xs text-gray-400">{Math.round(share * (total > 0 ? 100 : 0))}%</span>
+              </div>
+              <div className="mt-3 h-5 rounded-[6px]" style={{ background: d.fill }} />
+            </div>
+          )
+        })}
+      </div>
     </Card>
   )
 }
@@ -447,30 +552,15 @@ function DocsByType({ prd, quotation, prototype, specs, delay = 0 }: {
 function PaymentFunnel({ initiated, settled, failed, rate, delay = 0 }: {
   initiated: number; settled: number; failed: number; rate: number; delay?: number
 }) {
-  const data = [
-    { name: 'Initiated', value: initiated, fill: '#94a3b8' },
-    { name: 'Settled', value: settled, fill: '#10b981' },
+  const data: BarDatum[] = [
+    { name: 'Initiated', value: initiated, fill: BLUE_SOFT },
+    { name: 'Settled', value: settled, fill: BLUE },
     { name: 'Failed', value: failed, fill: '#f87171' },
   ]
   return (
-    <Card delay={delay}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <iconify-icon icon="solar:wallet-money-linear" width="15" style={{ color: '#9ca3af' }} />
-          <span className="text-sm font-semibold" style={{ color: '#111827' }}>Payment Funnel</span>
-        </div>
-        <DeltaBadge n={rate} suffix="% settled" />
-      </div>
-      <ResponsiveContainer width="100%" height={148}>
-        <BarChart data={data} barSize={44} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
-          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={formatK} />
-          <Tooltip content={<DarkTip />} cursor={{ fill: 'rgba(0,0,0,0.03)', radius: 6 }} />
-          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-            {data.map((d, i) => <Cell key={i} fill={d.fill} fillOpacity={0.85} />)}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <Card delay={delay} className="!rounded-[20px] !p-5">
+      <ChartHeader title="Payment Funnel" subtitle="Payment attempts by outcome" right={<DeltaBadge n={rate} suffix="% settled" />} />
+      <TrackBars data={data} />
     </Card>
   )
 }
@@ -482,7 +572,7 @@ export default function DashboardPage() {
   const [health, setHealth] = useState<HealthState>({ status: 'loading' })
 
   const load = useCallback(async () => {
-    try { setStats(await fetchAdminStats()) }
+    try { setStats(await fetchAdminStats()); setError(null) }
     catch (e) { setError(e instanceof Error ? e.message : 'Failed to load') }
   }, [])
 
@@ -491,9 +581,16 @@ export default function DashboardPage() {
     catch { setHealth({ status: 'error' }) }
   }, [])
 
-  useEffect(() => { void load(); void loadHealth() }, [load, loadHealth])
+  useEffect(() => {
+    void load(); void loadHealth()
+    // Keep the dashboard live: refresh every 30s while the tab is visible, and on return to the tab.
+    const tick = () => { if (document.visibilityState === 'visible') { void load(); void loadHealth() } }
+    const id = setInterval(tick, 30_000)
+    document.addEventListener('visibilitychange', tick)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick) }
+  }, [load, loadHealth])
 
-  if (error) return (
+  if (error && !stats) return (
     <div className="m-10 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>
   )
   if (!stats) return (
@@ -506,17 +603,16 @@ export default function DashboardPage() {
   const fTotal = stats.paymentFunnel.initiated + stats.paymentFunnel.settled + stats.paymentFunnel.failed
   const settleRate = fTotal > 0 ? Math.round((stats.paymentFunnel.settled / fTotal) * 100) : 0
   const signupDelta = stats.newUsersThisMonth - stats.newUsersLastMonth
+  const trends = stats.monthlyTrends ?? []
 
   return (
     <>
       <style>{css}</style>
       <div className="flex flex-col h-full">
         {/* header */}
-        <header className="shrink-0 px-10 pt-10 pb-6" style={{ backgroundColor: '#f8fafc' }}>
-          <h1 className="text-3xl font-semibold tracking-tight" style={{ color: '#111827', fontFamily: "'Instrument Serif', serif" }}>
-            Dashboard
-          </h1>
-          <p className="mt-1.5 text-sm" style={{ color: '#9ca3af' }}>Overview for this month.</p>
+        <header className="shrink-0 px-6 pt-2 pb-5">
+          <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Dashboard</h1>
+          <p className="mt-1.5 text-sm text-black/45">Overview for this month.</p>
         </header>
 
         <div className="flex-1 overflow-y-auto px-10 pb-10">
@@ -525,18 +621,25 @@ export default function DashboardPage() {
             {/* expiry alert */}
             {stats.expiringSubsCount > 0 && (
               <div className="fade-up flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-5 py-3.5 text-sm text-yellow-700">
-                <iconify-icon icon="solar:danger-triangle-linear" width="15" style={{ color: '#fbbf24', flexShrink: 0 }} />
+                <TriangleAlert className="size-[15px] shrink-0 text-amber-400" />
                 <span><strong className="font-semibold">{stats.expiringSubsCount}</strong> subscription{stats.expiringSubsCount > 1 ? 's' : ''} expire within 7 days.</span>
               </div>
             )}
 
             {/* ── Row 1: 4 stat tiles ── */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <StatTile icon="solar:users-group-rounded-linear" label="Total users" value={stats.totalUsers.toLocaleString()} delay={40} />
-              <StatTile icon="solar:crown-linear" label="Active Pro" value={stats.activeProSubs.toLocaleString()} delay={80} />
-              <StatTile icon="solar:graph-up-linear" label="Revenue" value={formatRp(stats.revenueThisMonth)} delay={120} />
-              <StatTile icon="solar:user-plus-linear" label="New signups" value={stats.newUsersThisMonth}
-                delta={signupDelta} sub={`vs ${stats.newUsersLastMonth} last month`} delay={160} />
+              <StatTile icon={UsersRound} label="Total users" value={stats.totalUsers.toLocaleString()}
+                caption={`${stats.starterUsers.toLocaleString()} Starter, ${stats.activeProSubs.toLocaleString()} Pro`}
+                chart={<MiniBars values={trends.map(t => t.totalUsers)} count={6} />} delay={40} />
+              <StatTile icon={Crown} label="Active Pro" value={stats.activeProSubs.toLocaleString()}
+                caption={`${stats.paymentFunnel.settled} settled of ${stats.paymentFunnel.initiated} payments`}
+                chart={<MiniBars values={trends.map(t => t.settledPayments)} count={6} />} delay={80} />
+              <StatTile icon={LineChart} label="Revenue" value={formatRp(stats.revenueThisMonth)}
+                caption="Settled this month"
+                chart={<MiniLine values={(stats.revenueTrend ?? []).map(t => t.revenue)} />} delay={120} />
+              <StatTile icon={UserPlus} label="New signups" value={stats.newUsersThisMonth}
+                delta={signupDelta} caption={`vs ${stats.newUsersLastMonth} last month`}
+                chart={<MiniBars values={trends.map(t => t.newUsers)} count={6} />} delay={160} />
             </div>
 
             {/* ── Row 2: Revenue tracker (2/3) + Recent payments (1/3) ── */}
@@ -551,7 +654,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <PlanBreakdown total={stats.totalUsers} pro={stats.activeProSubs} delay={280} />
               <TopUsers users={stats.topUsersByUsage ?? []} delay={320} />
-              <SystemHealth health={health} delay={360} />
+              <SystemHealth health={health} onRefresh={() => void loadHealth()} delay={360} />
             </div>
 
             {/* ── Row 4: Usage + Docs by type + Payment funnel ── */}

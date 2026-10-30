@@ -31,7 +31,7 @@ export default function VerifyEmailPage() {
   }, [token])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center antialiased px-4 py-10" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#F4EBE1' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center antialiased px-4 py-10" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", backgroundColor: '#F4EBE1' }}>
       <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ backgroundColor: '#ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.08)' }}>
         <h1 className="text-2xl tracking-tight mb-4" style={{ fontFamily: bowlby, color: '#111827' }}>{tr('verify_title')}</h1>
         {state === 'loading' && <p className="text-sm text-zinc-500">Loading…</p>}

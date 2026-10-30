@@ -18,7 +18,7 @@ export default function BlogLayout({
     year: 'numeric',
   })
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden" style={{ fontFamily: "'Inter Tight', 'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-white relative overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <GridLines />
       <LandingNav />
       <main className="max-w-2xl mx-auto px-6 pt-24 pb-12 relative z-10">
