@@ -41,23 +41,6 @@ function NotifIcon({ type }: { type: string }) {
   return <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Icon className="size-4" /></span>
 }
 
-/** Avatar with a small yellow crown perched on it for Pro accounts. */
-function PlanAvatar({ username, isPro, className = '' }: { username: string; isPro: boolean; className?: string }) {
-  return (
-    <span className={`relative inline-flex ${className}`}>
-      <Avatar><AvatarFallback className="text-sm">{username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-      {isPro && (
-        <Crown
-          className="absolute -top-2 -right-1.5 size-4 rotate-[18deg] text-amber-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]"
-          fill="currentColor"
-          strokeWidth={1.5}
-          aria-hidden="true"
-        />
-      )}
-    </span>
-  )
-}
-
 function PlanBadge({ isPro, plan }: { isPro: boolean; plan: string }) {
   return isPro ? (
     <Badge className="gap-1 bg-amber-100 px-2 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/20 dark:text-amber-300">
@@ -123,13 +106,13 @@ export function Topbar(p: TopbarProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger aria-label="Account menu" render={<Button variant="ghost" className="h-10 gap-2.5 py-1 pr-2 pl-1 hover:bg-[rgb(var(--ap-surf-rgb,255_255_255)/0.6)]" />}>
-            <PlanAvatar username={p.username} isPro={isPro} />
+            <Avatar><AvatarFallback className="text-sm">{p.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
             <span className="hidden max-w-[160px] truncate text-sm font-medium sm:block">{p.username}</span>
             <ChevronDown className="hidden size-3.5 text-[var(--ap-ink-4,#6b7280)] sm:block" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2">
             <div className="flex items-center gap-3 px-2 py-2">
-              <PlanAvatar username={p.username} isPro={isPro} />
+              <Avatar><AvatarFallback className="text-sm">{p.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold">{p.username}</span>
                 <span className="mt-1 block"><PlanBadge isPro={isPro} plan={p.plan} /></span>
