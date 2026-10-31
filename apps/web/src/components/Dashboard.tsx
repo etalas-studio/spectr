@@ -380,14 +380,14 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
     )
   }
 
-  const title = chatState ? (currentConversation?.summary ?? chatState.prompt) : activeNav === 'documents' ? 'Artifacts' : tr('dash_new_project')
+  const title = chatState ? (currentConversation?.summary ?? chatState.prompt) : activeNav === 'documents' ? 'Artifacts' : composerProjectId ? tr('dash_new_chat') : tr('dash_new_project')
   const planLabel = sub?.planSlug === 'pro' ? 'Pro' : 'Starter'
 
   if (!subLoading && sub !== undefined && !sub?.planSlug) {
     return (
-      <div className="ap-root flex min-h-screen items-center justify-center bg-[#f8fafc]">
+      <div className="ap-root flex min-h-screen items-center justify-center bg-[rgb(var(--ap-ov,0_0_0)/0.06)]">
         <div className="max-w-sm px-4 text-center">
-          <p className="mb-4 text-sm text-gray-500">No active plan found. Please contact support.</p>
+          <p className="mb-4 text-sm text-[var(--ap-ink-3,#5b6472)]">No active plan found. Please contact support.</p>
           <a href="mailto:hello@etalas.com" className="text-sm font-semibold text-primary underline">hello@etalas.com</a>
         </div>
       </div>

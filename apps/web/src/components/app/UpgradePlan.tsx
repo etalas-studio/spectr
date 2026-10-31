@@ -29,7 +29,7 @@ export function UpgradePlan({ onNavigate }: { onNavigate?: () => void }) {
         <p className="mt-4 text-[28px] leading-none font-semibold tracking-tight">Free</p>
         <ul className="mt-4 flex flex-col gap-2.5">
           {starter.featureKeys.map((k) => (
-            <li key={k} className="flex items-center gap-3 text-sm"><Check className="size-3.5 text-gray-400" />{tr(k)}</li>
+            <li key={k} className="flex items-center gap-3 text-sm"><Check className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" />{tr(k)}</li>
           ))}
         </ul>
       </Card>
@@ -43,7 +43,7 @@ export function UpgradePlan({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <p className="relative mt-4 flex items-baseline gap-1.5">
           <span className="text-[28px] leading-none font-semibold tracking-tight">Rp {pro.amount.toLocaleString('id-ID')}</span>
-          <span className="text-sm text-gray-500">/ 30 days</span>
+          <span className="text-sm text-[var(--ap-ink-3,#5b6472)]">/ 30 days</span>
         </p>
         <ul className="relative mt-4 flex flex-col gap-2.5">
           {pro.featureKeys.map((k) => (
@@ -59,7 +59,7 @@ export function UpgradePlan({ onNavigate }: { onNavigate?: () => void }) {
         </Button>
       </Card>
 
-      <p className="px-4 text-center text-xs text-gray-500">One-time payment via Midtrans. Renew manually after 30 days, no automatic billing.</p>
+      <p className="px-4 text-center text-xs text-[var(--ap-ink-3,#5b6472)]">One-time payment via Midtrans. Renew manually after 30 days, no automatic billing.</p>
     </div>
   )
 }

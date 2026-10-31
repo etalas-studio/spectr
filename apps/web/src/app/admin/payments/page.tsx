@@ -66,20 +66,20 @@ export default function PaymentsPage() {
   return (
     <div className="flex flex-col h-full">
       <header className="shrink-0 px-6 pt-2 pb-5">
-        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Payments</h1>
-        <p className="mt-1.5 text-sm text-black/45">Recent transactions.</p>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--ap-ink,#111827)]">Payments</h1>
+        <p className="mt-1.5 text-sm text-[var(--ap-ink-4,#6b7280)]">Recent transactions.</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-10 pb-10">
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        {!payments && !error && <p className="text-sm text-neutral-400">Loading…</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-300">{error}</p>}
+        {!payments && !error && <p className="text-sm text-[var(--ap-ink-4,#6b7280)]">Loading…</p>}
         {payments && (
-          <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-5">
+          <div className="rounded-2xl border border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] p-6 space-y-5">
 
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative w-[260px]">
-                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
+                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--ap-ink-4,#6b7280)]" />
                 <Input
                   placeholder="Search order or email…"
                   value={search}
@@ -90,7 +90,7 @@ export default function PaymentsPage() {
               <Select value={statusFilter} onValueChange={(v) => setStatusReset(v ?? 'all')}>
                 <SelectTrigger className={fieldTrigger} aria-label="Filter by status">
                   <SelectValue>{(v) => (v === 'all' ? 'All statuses' : (v as string))}</SelectValue>
-                  <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                  <SelectIcon><ChevronDownIcon className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></SelectIcon>
                 </SelectTrigger>
                 <SelectContent>
                   {STATUS_OPTIONS.map(s => (
@@ -101,7 +101,7 @@ export default function PaymentsPage() {
               <Select value={planFilter} onValueChange={(v) => setPlanReset(v ?? 'all')}>
                 <SelectTrigger className={fieldTrigger} aria-label="Filter by plan">
                   <SelectValue>{(v) => (v === 'all' ? 'All plans' : (v as string))}</SelectValue>
-                  <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                  <SelectIcon><ChevronDownIcon className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></SelectIcon>
                 </SelectTrigger>
                 <SelectContent>
                   {PLAN_OPTIONS.map(p => (
@@ -113,7 +113,7 @@ export default function PaymentsPage() {
 
             {/* Table */}
             {paginated.length === 0 ? (
-              <p className="text-sm text-neutral-500 py-4">No payments match your filters.</p>
+              <p className="text-sm text-[var(--ap-ink-3,#5b6472)] py-4">No payments match your filters.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -126,15 +126,15 @@ export default function PaymentsPage() {
                 <TableBody>
                   {paginated.map((p) => (
                     <TableRow key={p.orderId}>
-                      <TableCell><span className="font-mono text-xs text-gray-500">{p.orderId.slice(0, 16)}…</span></TableCell>
+                      <TableCell><span className="font-mono text-xs text-[var(--ap-ink-3,#5b6472)]">{p.orderId.slice(0, 16)}…</span></TableCell>
                       <TableCell>{p.userEmail ?? '—'}</TableCell>
                       <TableCell>
                         {p.planSlug ? <Badge tone="blue">{p.planSlug}</Badge> : '—'}
                       </TableCell>
-                      <TableCell><span className="font-medium text-[#111827]">{formatRupiah(Number(p.grossAmount))}</span></TableCell>
+                      <TableCell><span className="font-medium text-[var(--ap-ink,#111827)]">{formatRupiah(Number(p.grossAmount))}</span></TableCell>
                       <TableCell>{statusBadge(p.status)}</TableCell>
-                      <TableCell className="text-gray-500">{p.fraudStatus ?? '—'}</TableCell>
-                      <TableCell className="text-gray-500">{new Date(p.createdAt).toLocaleDateString('id-ID')}</TableCell>
+                      <TableCell className="text-[var(--ap-ink-3,#5b6472)]">{p.fraudStatus ?? '—'}</TableCell>
+                      <TableCell className="text-[var(--ap-ink-3,#5b6472)]">{new Date(p.createdAt).toLocaleDateString('id-ID')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -143,16 +143,16 @@ export default function PaymentsPage() {
 
             {/* Pagination */}
             <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <div className="flex items-center gap-3 text-xs text-[var(--ap-ink-3,#5b6472)]">
                 <span>Page {page} of {totalPages}</span>
                 <span>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                <Button variant="secondary" size="sm" className="bg-[rgb(var(--ap-ov,0_0_0)/0.06)]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                  <Button key={n} size="sm" variant={n === page ? 'primary' : 'secondary'} className={n === page ? '' : 'bg-black/[0.06]'} onClick={() => setPage(n)}>{n}</Button>
+                  <Button key={n} size="sm" variant={n === page ? 'primary' : 'secondary'} className={n === page ? '' : 'bg-[rgb(var(--ap-ov,0_0_0)/0.06)]'} onClick={() => setPage(n)}>{n}</Button>
                 ))}
-                <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+                <Button variant="secondary" size="sm" className="bg-[rgb(var(--ap-ov,0_0_0)/0.06)]" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
               </div>
             </div>
           </div>

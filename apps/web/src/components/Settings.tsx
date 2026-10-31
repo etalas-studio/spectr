@@ -5,13 +5,14 @@ import { useSubscription } from '../hooks/useSubscription'
 import { Crown, Settings2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { ThemePicker } from './app/ThemeToggle'
 import { Switch } from '@/components/ui/switch'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mb-4 rounded-2xl border bg-white px-6 pt-5 pb-3">
-      <h3 className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-gray-400 uppercase">{title}</h3>
-      <div className="divide-y divide-black/[0.06]">{children}</div>
+    <section className="mb-4 rounded-2xl border bg-[var(--ap-surface,#fff)] px-6 pt-5 pb-3">
+      <h3 className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--ap-ink-4,#6b7280)] uppercase">{title}</h3>
+      <div className="divide-y divide-[rgb(var(--ap-ov,0_0_0)/0.06)]">{children}</div>
     </section>
   )
 }
@@ -21,7 +22,7 @@ function Row({ title, sub, children }: { title: string; sub?: string; children: 
     <div className="flex min-h-[46px] items-center justify-between gap-4 py-3">
       <div className="min-w-0">
         <p className="text-sm font-medium">{title}</p>
-        {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
+        {sub && <p className="mt-0.5 text-xs text-[var(--ap-ink-4,#6b7280)]">{sub}</p>}
       </div>
       {children}
     </div>
@@ -47,12 +48,12 @@ export default function Settings({ onUpgrade }: { onUpgrade?: () => void }) {
     <div className="px-6 pt-2 pb-6">
       <Section title="Subscription">
         <Row title="Current plan">
-          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${isPro ? 'bg-primary/10 text-primary' : 'bg-black/[0.06] text-gray-500'}`}>{isPro ? 'Pro' : 'Starter'}</span>
+          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${isPro ? 'bg-primary/10 text-primary' : 'bg-[rgb(var(--ap-ov,0_0_0)/0.06)] text-[var(--ap-ink-3,#5b6472)]'}`}>{isPro ? 'Pro' : 'Starter'}</span>
         </Row>
-        {startedAt && <Row title="Started"><span className="text-sm text-gray-500">{startedAt}</span></Row>}
+        {startedAt && <Row title="Started"><span className="text-sm text-[var(--ap-ink-3,#5b6472)]">{startedAt}</span></Row>}
         {(isPro || expiresAt) && (
           <Row title={sub?.expired ? 'Expired' : 'Renews'}>
-            <span className={`text-sm ${sub?.expired ? 'text-destructive' : 'text-gray-500'}`}>{expiresAt ?? '—'}</span>
+            <span className={`text-sm ${sub?.expired ? 'text-destructive' : 'text-[var(--ap-ink-3,#5b6472)]'}`}>{expiresAt ?? '—'}</span>
           </Row>
         )}
         <Row title={isPro ? 'Manage plan' : 'Upgrade to Pro'} sub={isPro ? 'Change or cancel your subscription' : 'Unlock unlimited documents & AI chat'}>
@@ -60,8 +61,8 @@ export default function Settings({ onUpgrade }: { onUpgrade?: () => void }) {
         </Row>
       </Section>
 
-      <section className="mb-4 rounded-2xl border bg-white p-6">
-        <h3 className="mb-4 text-[11px] font-semibold tracking-[0.08em] text-gray-400 uppercase">{L('Language', 'Bahasa')}</h3>
+      <section className="mb-4 rounded-2xl border bg-[var(--ap-surface,#fff)] p-6">
+        <h3 className="mb-4 text-[11px] font-semibold tracking-[0.08em] text-[var(--ap-ink-4,#6b7280)] uppercase">{L('Language', 'Bahasa')}</h3>
         <ToggleGroup value={[lang]} onValueChange={(v) => { if (v[0]) setLang(v[0] as Lang) }}>
           <ToggleGroupItem value="en">English</ToggleGroupItem>
           <ToggleGroupItem value="id">Bahasa Indonesia</ToggleGroupItem>
@@ -78,6 +79,9 @@ export default function Settings({ onUpgrade }: { onUpgrade?: () => void }) {
       </Section>
 
       <Section title={L('Appearance', 'Tampilan')}>
+        <Row title={L('Theme', 'Tema')} sub={L('Light, dark, or follow your system', 'Terang, gelap, atau ikuti sistem')}>
+          <ThemePicker />
+        </Row>
         <Row title={L('Compact mode', 'Mode kompak')} sub={L('Reduce spacing in lists and cards', 'Kurangi jarak di daftar dan kartu')}>
           <Switch checked={compactMode} onCheckedChange={setCompactMode} aria-label={L('Compact mode', 'Mode kompak')} />
         </Row>

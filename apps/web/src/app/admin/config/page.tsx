@@ -44,19 +44,19 @@ function ProviderCard({
   onDisconnect: () => void
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.08] bg-white p-5">
+    <div className="rounded-2xl border border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[#111827]">{integration.name}</span>
+          <span className="text-sm font-semibold text-[var(--ap-ink,#111827)]">{integration.name}</span>
           <Badge tone={integration.connected ? 'green' : 'gray'}>
             {integration.connected ? 'connected' : 'disconnected'}
           </Badge>
         </div>
-        <span className="text-xs text-gray-500">{integration.models.length} model{integration.models.length !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-[var(--ap-ink-3,#5b6472)]">{integration.models.length} model{integration.models.length !== 1 ? 's' : ''}</span>
       </div>
 
       {integration.error && !integration.connected && (
-        <p className="mb-3 text-xs text-orange-500">{integration.error}</p>
+        <p className="mb-3 text-xs text-orange-600 dark:text-orange-300">{integration.error}</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -69,7 +69,7 @@ function ProviderCard({
             onChange={(e) => onFormChange({ apiKey: e.target.value })}
             className="pr-10"
           />
-          <Button variant="ghost" size="icon-xs" type="button" tabIndex={-1} onClick={onToggleKey} aria-label={showKey ? 'Hide API key' : 'Show API key'} className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-400">
+          <Button variant="ghost" size="icon-xs" type="button" tabIndex={-1} onClick={onToggleKey} aria-label={showKey ? 'Hide API key' : 'Show API key'} className="absolute top-1/2 right-2 -translate-y-1/2 text-[var(--ap-ink-4,#6b7280)]">
             {showKey ? <EyeOff /> : <Eye />}
           </Button>
         </div>
@@ -85,10 +85,10 @@ function ProviderCard({
 
         <div className="mt-1 flex flex-wrap gap-2">
           <Button variant="primary" className="h-10 gap-2 px-4 font-semibold" onClick={onConnect} disabled={busy || !form.apiKey.trim()}><PlugZap /> Connect & save</Button>
-          <Button variant="secondary" className="h-10 gap-2 bg-black/[0.06] px-4 font-semibold" onClick={onTest} disabled={busy || !form.apiKey.trim()}><FlaskConical /> Test (no save)</Button>
+          <Button variant="secondary" className="h-10 gap-2 bg-[rgb(var(--ap-ov,0_0_0)/0.06)] px-4 font-semibold" onClick={onTest} disabled={busy || !form.apiKey.trim()}><FlaskConical /> Test (no save)</Button>
           {integration.connected && (
             <>
-              <Button variant="secondary" className="h-10 gap-2 bg-black/[0.06] px-4 font-semibold" onClick={onPing} disabled={busy}><Activity /> Ping</Button>
+              <Button variant="secondary" className="h-10 gap-2 bg-[rgb(var(--ap-ov,0_0_0)/0.06)] px-4 font-semibold" onClick={onPing} disabled={busy}><Activity /> Ping</Button>
               <Button variant="destructive" className="h-10 gap-2 px-4 font-semibold" onClick={onDisconnect} disabled={busy}><Plug /> Disconnect</Button>
             </>
           )}
@@ -143,8 +143,8 @@ export default function ConfigPage() {
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 px-6 pt-2 pb-5">
-        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Configuration</h1>
-        <p className="mt-1.5 text-sm text-black/45">AI engine and provider settings. Changes apply immediately.</p>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--ap-ink,#111827)]">Configuration</h1>
+        <p className="mt-1.5 text-sm text-[var(--ap-ink-4,#6b7280)]">AI engine and provider settings. Changes apply immediately.</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-10 pb-10">
@@ -175,13 +175,13 @@ export default function ConfigPage() {
           </TabsContent>
 
           <TabsContent value="engine">
-            <div className="rounded-2xl border border-black/[0.08] bg-white p-6">
+            <div className="rounded-2xl border border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] p-6">
               <div className="flex flex-col gap-4">
                 {Object.entries(STAGE_LABELS).map(([stage, label]) => (
                   <div key={stage} className="flex flex-wrap items-center gap-4">
                     <div className="min-w-[220px]">
-                      <div className="text-sm font-medium text-[#111827]">{label}</div>
-                      <div className="text-xs text-gray-500">{stage}</div>
+                      <div className="text-sm font-medium text-[var(--ap-ink,#111827)]">{label}</div>
+                      <div className="text-xs text-[var(--ap-ink-3,#5b6472)]">{stage}</div>
                     </div>
                     <Select
                       value={stageValues[stage] ?? ''}
@@ -190,7 +190,7 @@ export default function ConfigPage() {
                     >
                       <SelectTrigger className="h-10 min-w-[220px] flex-1 justify-between rounded-xl border border-input bg-muted/60 px-3.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 data-disabled:cursor-not-allowed data-disabled:opacity-60" aria-label={label}>
                         <SelectValue>{(v) => (v ? (v as string) : models.length === 0 ? 'Connect a provider first' : 'Select model')}</SelectValue>
-                        <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                        <SelectIcon><ChevronDownIcon className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></SelectIcon>
                       </SelectTrigger>
                       <SelectContent>
                         {models.map(m => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}

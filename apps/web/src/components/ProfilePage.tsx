@@ -26,7 +26,7 @@ async function changePassword(current: string, next: string): Promise<void> {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <Label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold tracking-[0.08em] text-gray-400 uppercase">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-semibold tracking-[0.08em] text-[var(--ap-ink-4,#6b7280)] uppercase">{label}</span>
       {children}
     </Label>
   )
@@ -66,21 +66,21 @@ export default function ProfilePage() {
 
   return (
     <div className="px-6 pt-2 pb-6">
-      <section className="mb-4 rounded-2xl border bg-white p-6">
+      <section className="mb-4 rounded-2xl border bg-[var(--ap-surface,#fff)] p-6">
         <div className="mb-6 flex items-center gap-4">
           <span className="ap-avatar size-16 text-2xl">{username.charAt(0).toUpperCase()}</span>
           <div>
             <p className="text-lg font-semibold">{username}</p>
-            <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${isPro ? 'bg-primary/10 text-primary' : 'bg-black/[0.06] text-gray-500'}`}>{isPro ? 'Pro' : 'Starter'}</span>
+            <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${isPro ? 'bg-primary/10 text-primary' : 'bg-[rgb(var(--ap-ov,0_0_0)/0.06)] text-[var(--ap-ink-3,#5b6472)]'}`}>{isPro ? 'Pro' : 'Starter'}</span>
           </div>
         </div>
         <div className="flex flex-col gap-3">
-          <Field label="Username"><Input value={username} readOnly className="cursor-default text-gray-500" /></Field>
-          <Field label="Email"><Input value={email} readOnly className="cursor-default text-gray-500" /></Field>
+          <Field label="Username"><Input value={username} readOnly className="cursor-default text-[var(--ap-ink-3,#5b6472)]" /></Field>
+          <Field label="Email"><Input value={email} readOnly className="cursor-default text-[var(--ap-ink-3,#5b6472)]" /></Field>
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-white p-6">
+      <section className="rounded-2xl border bg-[var(--ap-surface,#fff)] p-6">
         <h2 className="mb-4 text-sm font-semibold">{L('Change Password', 'Ganti Password')}</h2>
         <div className="flex flex-col gap-3">
           <Field label={L('Current Password', 'Password Saat Ini')}>

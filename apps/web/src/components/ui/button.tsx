@@ -21,17 +21,17 @@ const buttonVariants = cva(
         primary:
           "border-0 bg-linear-to-b from-[#2f6df0] to-[#1d4ed8] text-white shadow-[0_4px_10px_rgba(38,94,228,0.28),inset_0_1px_0_rgba(255,255,255,0.25)] hover:brightness-105 disabled:opacity-45 data-[send]:disabled:opacity-100",
         pill:
-          "border-black/[0.08] bg-white text-gray-700 shadow-[0_1px_2px_rgba(17,24,39,0.04)] hover:bg-white",
+          "border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] text-[var(--ap-ink-2,#374151)] shadow-[0_1px_2px_rgba(17,24,39,0.04)] hover:bg-[var(--ap-surface,#fff)]",
         glass:
-          "border-white/95 bg-white text-gray-700 shadow-[0_1px_2px_rgba(17,24,39,0.06)] hover:bg-white aria-expanded:bg-white",
+          "border-[var(--ap-edge,rgba(255,255,255,.95))] bg-[var(--ap-surface,#fff)] text-[var(--ap-ink-2,#374151)] shadow-[0_1px_2px_rgba(17,24,39,0.06)] hover:bg-[var(--ap-surface,#fff)] aria-expanded:bg-[var(--ap-surface,#fff)]",
         nav:
-          "h-auto w-full justify-start gap-3 px-3 py-2.5 font-normal text-gray-700 hover:bg-black/[0.04] aria-[current=page]:bg-[rgba(38,94,228,0.14)] aria-[current=page]:font-semibold aria-[current=page]:text-[#1e40af] aria-[current=page]:shadow-[inset_0_0_0_1px_rgba(38,94,228,0.18)]",
+          "h-auto w-full justify-start gap-3 px-3 py-2.5 font-normal text-[var(--ap-ink-2,#374151)] hover:bg-[rgb(var(--ap-ov,0_0_0)/0.04)] aria-[current=page]:bg-[rgba(38,94,228,0.14)] aria-[current=page]:font-semibold aria-[current=page]:text-[var(--ap-accent-ink,#1e40af)] aria-[current=page]:shadow-[inset_0_0_0_1px_rgba(38,94,228,0.18)]",
         row:
-          "h-9 w-full justify-start gap-2 px-2 text-xs font-normal text-black/60 hover:bg-black/[0.04] aria-[current=true]:bg-[rgba(38,94,228,0.12)] aria-[current=true]:font-medium aria-[current=true]:text-[#1e40af]",
+          "h-9 w-full justify-start gap-2 px-2 text-xs font-normal text-[var(--ap-ink-3,#5b6472)] hover:bg-[rgb(var(--ap-ov,0_0_0)/0.04)] aria-[current=true]:bg-[rgba(38,94,228,0.12)] aria-[current=true]:font-medium aria-[current=true]:text-[var(--ap-accent-ink,#1e40af)]",
         field:
-          "h-10 w-full justify-start gap-2 border-black/[0.08] bg-black/[0.03] px-3 font-normal text-gray-500 hover:bg-black/[0.05]",
+          "h-10 w-full justify-start gap-2 border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[rgb(var(--ap-ov,0_0_0)/0.03)] px-3 font-normal text-[var(--ap-ink-3,#5b6472)] hover:bg-[rgb(var(--ap-ov,0_0_0)/0.05)]",
         card:
-          "relative h-auto w-full flex-col items-stretch justify-start gap-3.5 overflow-hidden whitespace-normal border-black/[0.08] bg-white p-4 text-left font-normal shadow-[0_1px_2px_rgba(17,24,39,0.04)] hover:bg-white active:translate-y-0",
+          "relative h-auto w-full flex-col items-stretch justify-start gap-3.5 overflow-hidden whitespace-normal border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] p-4 text-left font-normal shadow-[0_1px_2px_rgba(17,24,39,0.04)] hover:bg-[var(--ap-surface,#fff)] active:translate-y-0",
       },
       size: {
         default:
@@ -46,7 +46,7 @@ const buttonVariants = cva(
           "size-7 rounded-[12px] in-data-[slot=button-group]:rounded-[12px]",
         "icon-lg": "size-9",
         "icon-xl": "size-10",
-        send: "size-11 rounded-full",
+        send: "size-9 rounded-full",
       },
     },
     compoundVariants: [

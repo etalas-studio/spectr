@@ -98,7 +98,7 @@ export default function HelpPage() {
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="size-[18px]" /></span>
             <span>
               <span className="block text-sm font-semibold">{L(label)}</span>
-              <span className="mt-0.5 block text-xs font-normal text-gray-400">{L(sub)}</span>
+              <span className="mt-0.5 block text-xs font-normal text-[var(--ap-ink-4,#6b7280)]">{L(sub)}</span>
             </span>
           </Button>
         ))}
@@ -106,7 +106,7 @@ export default function HelpPage() {
 
       {HELP_SECTIONS.map((section) => (
         <div key={section.title.en} className="mb-6">
-          <div className="mb-3 flex items-center gap-2 text-gray-500">
+          <div className="mb-3 flex items-center gap-2 text-[var(--ap-ink-3,#5b6472)]">
             <section.icon className="size-[13px]" />
             <span className="text-[11px] font-semibold tracking-widest uppercase">{L(section.title)}</span>
           </div>
@@ -121,11 +121,11 @@ export default function HelpPage() {
         </div>
       ))}
 
-      <div className="mt-8 flex items-center gap-4 rounded-2xl border bg-white p-5">
+      <div className="mt-8 flex items-center gap-4 rounded-2xl border bg-[var(--ap-surface,#fff)] p-5">
         <Avatar className="size-10 bg-linear-to-b from-[#2f6df0] to-[#1d4ed8] text-white"><AvatarFallback className="bg-transparent"><LifeBuoy className="size-[18px]" /></AvatarFallback></Avatar>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{lang === 'id' ? 'Butuh bantuan lebih?' : 'Need more help?'}</p>
-          <p className="mt-0.5 text-xs text-gray-400">{lang === 'id' ? 'Tim kami siap membantu via chat langsung.' : 'Our team is ready to help via live chat.'}</p>
+          <p className="mt-0.5 text-xs text-[var(--ap-ink-4,#6b7280)]">{lang === 'id' ? 'Tim kami siap membantu via chat langsung.' : 'Our team is ready to help via live chat.'}</p>
         </div>
         <Button variant="primary" className="h-9 px-4 text-sm font-semibold" render={<a href="mailto:hello@etalas.com" />}><Mail /> {lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}</Button>
       </div>

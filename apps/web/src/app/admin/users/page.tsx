@@ -21,7 +21,7 @@ import {
 } from '../../../api/admin'
 
 const fieldTrigger = 'h-10 w-full justify-between rounded-xl border border-input bg-muted/60 px-3.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30'
-const labelCls = 'mb-1.5 block text-xs font-medium text-gray-500'
+const labelCls = 'mb-1.5 block text-xs font-medium text-[var(--ap-ink-3,#5b6472)]'
 
 function planTone(slug: string | undefined): 'green' | 'blue' | 'gray' {
   if (slug === 'pro') return 'green'
@@ -71,7 +71,7 @@ function EditModal({
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="gap-0 rounded-2xl p-6 sm:max-w-[400px]">
         <DialogTitle className="text-lg leading-7 font-semibold tracking-tight">Edit user</DialogTitle>
-        <DialogDescription className="mt-0.5 text-sm text-gray-500">Update role and plan for this account.</DialogDescription>
+        <DialogDescription className="mt-0.5 text-sm text-[var(--ap-ink-3,#5b6472)]">Update role and plan for this account.</DialogDescription>
         <div className="mt-5 flex flex-col gap-4">
           <div>
             <Label className={labelCls}>Email</Label>
@@ -86,7 +86,7 @@ function EditModal({
             <Select value={role} onValueChange={(v) => setRole(v as 'user' | 'admin')}>
               <SelectTrigger className={fieldTrigger} aria-label="Role">
                 <SelectValue />
-                <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                <SelectIcon><ChevronDownIcon className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></SelectIcon>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="user">user</SelectItem>
@@ -99,7 +99,7 @@ function EditModal({
             <Select value={plan} onValueChange={(v) => setPlan((v ?? '') as 'pro' | 'starter' | '')}>
               <SelectTrigger className={fieldTrigger} aria-label="Plan">
                 <SelectValue>{(v) => PLAN_LABEL[(v as string) ?? ''] ?? 'No plan'}</SelectValue>
-                <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                <SelectIcon><ChevronDownIcon className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></SelectIcon>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">No plan</SelectItem>
@@ -108,10 +108,10 @@ function EditModal({
               </SelectContent>
             </Select>
           </div>
-          {err && <p className="text-xs text-red-500">{err}</p>}
+          {err && <p className="text-xs text-red-600 dark:text-red-300">{err}</p>}
         </div>
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <Button variant="secondary" className="h-10 gap-2 rounded-[12px] px-4 bg-black/[0.06] font-semibold text-gray-700 hover:bg-black/[0.1]" onClick={onClose}><X /> Cancel</Button>
+          <Button variant="secondary" className="h-10 gap-2 rounded-[12px] px-4 bg-[rgb(var(--ap-ov,0_0_0)/0.06)] font-semibold text-[var(--ap-ink-2,#374151)] hover:bg-[rgb(var(--ap-ov,0_0_0)/0.1)]" onClick={onClose}><X /> Cancel</Button>
           <Button variant="primary" className="h-10 gap-2 px-4 font-semibold" onClick={handleSave} disabled={saving}>
             <Save /> {saving ? 'Saving…' : 'Save'}
           </Button>
@@ -135,13 +135,13 @@ function DeleteModal({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="gap-0 rounded-2xl p-6 sm:max-w-[420px]">
-        <span className="flex size-10 items-center justify-center rounded-full bg-red-100 text-red-500"><Trash2 className="size-[18px]" /></span>
+        <span className="flex size-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-300"><Trash2 className="size-[18px]" /></span>
         <DialogTitle className="mt-4 text-lg leading-7 font-semibold tracking-tight">Delete user</DialogTitle>
-        <DialogDescription className="mt-1 text-sm leading-5 text-gray-500">
-          This permanently deletes <strong className="font-semibold text-gray-700">{user.email}</strong> and all their data. This action is irreversible and cannot be recovered.
+        <DialogDescription className="mt-1 text-sm leading-5 text-[var(--ap-ink-3,#5b6472)]">
+          This permanently deletes <strong className="font-semibold text-[var(--ap-ink-2,#374151)]">{user.email}</strong> and all their data. This action is irreversible and cannot be recovered.
         </DialogDescription>
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <Button variant="secondary" className="h-10 gap-2 rounded-[12px] px-4 bg-black/[0.06] font-semibold text-gray-700 hover:bg-black/[0.1]" onClick={onClose}><X /> Cancel</Button>
+          <Button variant="secondary" className="h-10 gap-2 rounded-[12px] px-4 bg-[rgb(var(--ap-ov,0_0_0)/0.06)] font-semibold text-[var(--ap-ink-2,#374151)] hover:bg-[rgb(var(--ap-ov,0_0_0)/0.1)]" onClick={onClose}><X /> Cancel</Button>
           <Button className="h-10 gap-2 rounded-[12px] px-4 bg-[#dc2626] font-semibold text-white hover:bg-[#b91c1c]" disabled={busy} onClick={() => onConfirm(user)}>
             <Trash2 /> {busy ? 'Deleting…' : 'Delete permanently'}
           </Button>
@@ -210,18 +210,18 @@ export default function UsersPage() {
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 px-6 pt-2 pb-5">
-        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Users</h1>
-        <p className="mt-1.5 text-sm text-black/45">All accounts, roles, and subscriptions.</p>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--ap-ink,#111827)]">Users</h1>
+        <p className="mt-1.5 text-sm text-[var(--ap-ink-4,#6b7280)]">All accounts, roles, and subscriptions.</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-10 pb-10">
-        {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
+        {error && <p className="mb-3 text-sm text-red-600 dark:text-red-300">{error}</p>}
 
-        <div className="space-y-5 rounded-2xl border border-black/[0.08] bg-white p-6">
+        <div className="space-y-5 rounded-2xl border border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] p-6">
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative w-[260px]">
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--ap-ink-4,#6b7280)]" />
               <Input
                 placeholder="Search email or username…"
                 value={search}
@@ -232,7 +232,7 @@ export default function UsersPage() {
             <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v ?? ''); setPage(1) }}>
               <SelectTrigger className={`${fieldTrigger} w-40`} aria-label="Filter by role">
                 <SelectValue>{(v) => ROLE_LABEL[(v as string) ?? ''] ?? 'All roles'}</SelectValue>
-                <SelectIcon><ChevronDownIcon className="size-3.5 text-gray-400" /></SelectIcon>
+                <SelectIcon><ChevronDownIcon className="size-3.5 text-[var(--ap-ink-4,#6b7280)]" /></SelectIcon>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All roles</SelectItem>
@@ -244,7 +244,7 @@ export default function UsersPage() {
 
           {/* Table */}
           {!data ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-[var(--ap-ink-3,#5b6472)]">Loading…</p>
           ) : (
             <Table>
               <TableHeader>
@@ -260,25 +260,25 @@ export default function UsersPage() {
               <TableBody>
                 {data.users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-gray-500">No users found.</TableCell>
+                    <TableCell colSpan={6} className="text-[var(--ap-ink-3,#5b6472)]">No users found.</TableCell>
                   </TableRow>
                 ) : data.users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell className="text-gray-500">{user.username}</TableCell>
+                    <TableCell className="text-[var(--ap-ink-3,#5b6472)]">{user.username}</TableCell>
                     <TableCell>
                       <Badge tone={user.role === 'admin' ? 'amber' : 'gray'}>{user.role}</Badge>
                     </TableCell>
                     <TableCell>
                       {user.subscription ? (
                         <Badge tone={planTone(user.subscription.planSlug)}>{user.subscription.planSlug}</Badge>
-                      ) : <span className="text-gray-400">—</span>}
+                      ) : <span className="text-[var(--ap-ink-4,#6b7280)]">—</span>}
                     </TableCell>
-                    <TableCell className="text-gray-500">{formatExpiry(user.subscription?.expiresAt ?? null)}</TableCell>
+                    <TableCell className="text-[var(--ap-ink-3,#5b6472)]">{formatExpiry(user.subscription?.expiresAt ?? null)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon-sm" className="text-gray-500" onClick={() => setEditTarget(user)} aria-label="Edit user"><Pencil /></Button>
-                        <Button variant="ghost" size="icon-sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => setDeleteTarget(user)} aria-label="Delete user"><Trash2 /></Button>
+                        <Button variant="ghost" size="icon-sm" className="text-[var(--ap-ink-3,#5b6472)]" onClick={() => setEditTarget(user)} aria-label="Edit user"><Pencil /></Button>
+                        <Button variant="ghost" size="icon-sm" className="text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15 hover:text-red-700 dark:hover:text-red-300" onClick={() => setDeleteTarget(user)} aria-label="Delete user"><Trash2 /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -289,13 +289,13 @@ export default function UsersPage() {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+            <span className="text-xs text-[var(--ap-ink-3,#5b6472)]">Page {page} of {totalPages}</span>
             <div className="flex items-center gap-1">
-              <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <Button variant="secondary" size="sm" className="bg-[rgb(var(--ap-ov,0_0_0)/0.06)]" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <Button key={n} size="sm" variant={n === page ? 'primary' : 'secondary'} className={n === page ? '' : 'bg-black/[0.06]'} onClick={() => setPage(n)}>{n}</Button>
+                <Button key={n} size="sm" variant={n === page ? 'primary' : 'secondary'} className={n === page ? '' : 'bg-[rgb(var(--ap-ov,0_0_0)/0.06)]'} onClick={() => setPage(n)}>{n}</Button>
               ))}
-              <Button variant="secondary" size="sm" className="bg-black/[0.06]" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</Button>
+              <Button variant="secondary" size="sm" className="bg-[rgb(var(--ap-ov,0_0_0)/0.06)]" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</Button>
             </div>
           </div>
         </div>

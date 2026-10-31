@@ -243,6 +243,7 @@ const STRINGS = {
   dash_new_project: { en: 'New project', id: 'Proyek baru' },
   dash_new_chat_in_project: { en: 'New chat in project', id: 'Chat baru di proyek' },
   dash_rename_project: { en: 'Rename project', id: 'Ubah nama proyek' },
+  dash_new_chat: { en: 'New chat', id: 'Chat baru' },
   dash_new_chat_in: { en: 'New chat in', id: 'Chat baru di' },
   dash_project_gone: { en: 'That project no longer exists — starting a new one.', id: 'Proyek itu sudah tidak ada — memulai proyek baru.' },
   docs_all_projects: { en: 'All projects', id: 'Semua proyek' },

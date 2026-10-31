@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { ArrowUp, File as FileIcon, Image as ImageIcon, Loader2, Paperclip, X } from 'lucide-react'
-import { createConversationLocal, type LocalConversation, type ConversationType } from '../../lib/conversations'
+import { createConversationLocal, titleFromPrompt, type LocalConversation, type ConversationType } from '../../lib/conversations'
 import { uploadAttachment, createMessage, type Attachment } from '../../api/conversations'
 import { DeliverableTypeSelect } from '../DeliverableTypeSelect'
 import { Badge } from '@/components/ui/badge'
@@ -84,7 +84,7 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
     setIsSubmitting(true)
     setError(null)
     try {
-      const local = await createConversationLocal({ type: 'general', pendingType: pendingType || undefined, summary: prompt.trim(), description: prompt.trim(), projectId: projectId ?? undefined })
+      const local = await createConversationLocal({ type: 'general', pendingType: pendingType || undefined, summary: titleFromPrompt(prompt), description: prompt.trim(), projectId: projectId ?? undefined })
       const uploaded: Attachment[] = []
       for (const a of attachments) {
         try { uploaded.push(await uploadAttachment(dataUrlToBlob(a.dataUrl), a.name, local.id)) } catch { /* skip failed upload */ }
@@ -115,15 +115,15 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
       onDrop={handleDrop}
     >
       {projectId && projectTitle && (
-        <div className="flex items-center gap-3 rounded-t-[18px] border-b border-black/[0.06] bg-black/[0.03] px-5 py-2.5">
-          <p className="truncate text-xs text-gray-500">{tr('dash_new_chat_in')} <span className="font-semibold text-gray-900">{projectTitle}</span></p>
+        <div className="flex items-center gap-3 rounded-t-[18px] border-b border-[rgb(var(--ap-ov,0_0_0)/0.06)] bg-[rgb(var(--ap-ov,0_0_0)/0.03)] px-5 py-2.5">
+          <p className="truncate text-xs text-[var(--ap-ink-3,#5b6472)]">{tr('dash_new_chat_in')} <span className="font-semibold text-[var(--ap-ink,#111827)]">{projectTitle}</span></p>
         </div>
       )}
       {atLimit && (
         <div className="flex items-center justify-between gap-3 rounded-t-[18px] border-b border-primary/15 bg-primary/[0.07] px-5 py-3">
           <div>
-            <p className="text-xs font-semibold text-[#1e40af]">{tr('plan_limit_title')}</p>
-            <p className="mt-0.5 text-xs text-gray-500">{tr('plan_limit_desc')}</p>
+            <p className="text-xs font-semibold text-[var(--ap-accent-ink,#1e40af)]">{tr('plan_limit_title')}</p>
+            <p className="mt-0.5 text-xs text-[var(--ap-ink-3,#5b6472)]">{tr('plan_limit_desc')}</p>
           </div>
           <Button variant="primary" size="sm" className="h-8 shrink-0 px-3 text-xs font-semibold" render={<a href="/pay?plan=pro" />}>{tr('plan_limit_upgrade')}</Button>
         </div>
@@ -145,7 +145,7 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 px-5 pb-3">
           {attachments.map((a, i) => (
-            <Badge key={i} className="gap-1.5 rounded-lg px-2.5 py-1 text-gray-700">
+            <Badge key={i} className="gap-1.5 rounded-lg px-2.5 py-1 text-[var(--ap-ink-2,#374151)]">
               {a.type.startsWith('image/') ? <img src={a.dataUrl} className="size-4 rounded object-cover" alt="" /> : <FileIcon className="size-3" />}
               <span className="max-w-[100px] truncate">{a.name}</span>
               <Button variant="ghost" size="icon-xs" className="size-4 opacity-40 hover:bg-transparent hover:opacity-100" onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))} aria-label="Remove attachment"><X className="size-3" /></Button>
@@ -158,8 +158,8 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
       <div className="flex flex-wrap items-center gap-2 px-4 pb-4">
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
         <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-        <Button variant="pill" size="icon-xl" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-4" /></Button>
-        <Button variant="pill" className="h-10 gap-2 px-4" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-4" /> Attach image</Button>
+        <Button variant="pill" size="icon-lg" className="size-8" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-3.5" /></Button>
+        <Button variant="pill" className="h-8 gap-1.5 px-3 text-[13px]" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-3.5" /> Attach image</Button>
         <DeliverableTypeSelect value={pendingType} onChange={setPendingType} />
         <Button
           variant="primary"

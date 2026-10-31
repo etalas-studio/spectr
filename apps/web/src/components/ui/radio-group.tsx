@@ -15,13 +15,13 @@ function RadioCard({ className, children, ...props }: RadioPrimitive.Root.Props)
     <RadioPrimitive.Root
       data-slot="radio-card"
       className={cn(
-        "group/radio flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-black/[0.02] px-3.5 py-3 text-left transition-colors outline-none hover:bg-black/[0.04] focus-visible:ring-3 focus-visible:ring-ring/40 data-checked:border-primary/40 data-checked:bg-primary/[0.07]",
+        "group/radio flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-[rgb(var(--ap-ov,0_0_0)/0.02)] px-3.5 py-3 text-left transition-colors outline-none hover:bg-[rgb(var(--ap-ov,0_0_0)/0.04)] focus-visible:ring-3 focus-visible:ring-ring/40 data-checked:border-primary/40 data-checked:bg-primary/[0.07]",
         className
       )}
       {...props}
     >
       {children}
-      <span className="ml-auto flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 border-black/20 group-data-checked/radio:border-primary">
+      <span className="ml-auto flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--ap-ov,0_0_0)/0.2)] group-data-checked/radio:border-primary">
         <RadioPrimitive.Indicator className="size-2 rounded-full bg-primary" />
       </span>
     </RadioPrimitive.Root>

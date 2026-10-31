@@ -19,14 +19,14 @@ export function ShareDialog({ open, onOpenChange, onCreate }: { open: boolean; o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent closeClassName="top-6 right-5" className="gap-0 rounded-2xl p-6 sm:max-w-[448px]">
         <DialogTitle className="text-lg leading-7 font-semibold tracking-tight">{tr('share_title')}</DialogTitle>
-        <DialogDescription className="mt-0.5 mb-5 text-sm text-gray-500">{tr('share_subtitle')}</DialogDescription>
+        <DialogDescription className="mt-0.5 mb-5 text-sm text-[var(--ap-ink-3,#5b6472)]">{tr('share_subtitle')}</DialogDescription>
         <RadioGroup value={vis} onValueChange={(v) => setVis(v as 'private' | 'shared')} aria-label={tr('share_title')}>
           {options.map((o) => (
             <RadioCard key={o.key} value={o.key}>
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-black/[0.06] text-gray-500 group-data-checked/radio:bg-primary/15 group-data-checked/radio:text-primary"><o.icon className="size-4" /></span>
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--ap-ov,0_0_0)/0.06)] text-[var(--ap-ink-3,#5b6472)] group-data-checked/radio:bg-primary/15 group-data-checked/radio:text-primary"><o.icon className="size-4" /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold">{o.title}</span>
-                <span className="block text-xs text-gray-500">{o.desc}</span>
+                <span className="block text-xs text-[var(--ap-ink-3,#5b6472)]">{o.desc}</span>
               </span>
             </RadioCard>
           ))}

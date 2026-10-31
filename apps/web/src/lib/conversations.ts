@@ -153,6 +153,14 @@ export async function loadConversationGroups(): Promise<ConversationGroup[]> {
  * `projectId` is given the new id is also threaded into that group; when absent
  * the server minted a fresh project, so the caller should reload groups.
  */
+/** Short chat title: the first few words of the prompt. */
+export function titleFromPrompt(prompt: string, maxWords = 6, maxChars = 48): string {
+  const words = prompt.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
+  let t = words.slice(0, maxWords).join(' ')
+  if (t.length > maxChars) t = t.slice(0, maxChars).trimEnd()
+  return words.length > maxWords || t.length < words.join(' ').length ? `${t.replace(/[.,;:!?-]+$/, '')}…` : t
+}
+
 export async function createConversationLocal(input: {
   type: ConversationType
   summary: string

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useRefreshSeconds } from '../prefs'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { CreditCard, Crown, FileText, Wallet, ArrowLeftRight, LineChart, Server, TriangleAlert, UserPlus, UsersRound, BarChart3, CalendarDays, CalendarRange, CircleCheck, CircleX, Check, Clock, Ellipsis, EllipsisVertical, Info, RefreshCw, LayoutGrid, type LucideIcon } from 'lucide-react'
 import {
@@ -42,7 +43,7 @@ function Card({ children, delay = 0, className = '' }: {
   children: React.ReactNode; delay?: number; className?: string
 }) {
   return (
-    <div className={`fade-up rounded-2xl border border-black/[0.08] bg-white p-5 ${className}`}
+    <div className={`fade-up rounded-2xl border border-[rgb(var(--ap-ov,0_0_0)/0.08)] bg-[var(--ap-surface,#fff)] p-5 ${className}`}
       style={{ animationDelay: `${delay}ms` }}>
       {children}
     </div>
@@ -53,8 +54,8 @@ function CardHeader({ icon: Icon, title, right }: { icon: LucideIcon; title: str
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
-        <Icon className="size-[15px] text-gray-400" />
-        <span className="text-sm font-semibold text-[#111827]">{title}</span>
+        <Icon className="size-[15px] text-[var(--ap-ink-4,#6b7280)]" />
+        <span className="text-sm font-semibold text-[var(--ap-ink,#111827)]">{title}</span>
       </div>
       {right && <div>{right}</div>}
     </div>
@@ -63,7 +64,7 @@ function CardHeader({ icon: Icon, title, right }: { icon: LucideIcon; title: str
 
 function SeeAll({ href }: { href: string }) {
   return (
-    <Link href={href} className="text-xs font-medium text-gray-400 transition-colors hover:text-[#265ee4]">
+    <Link href={href} className="text-xs font-medium text-[var(--ap-ink-4,#6b7280)] transition-colors hover:text-[var(--ap-accent,#265ee4)]">
       See All
     </Link>
   )
@@ -74,7 +75,7 @@ const PTAB_ICON: Record<string, LucideIcon> = { All: LayoutGrid, Settled: Circle
 function DeltaBadge({ n, suffix = '%' }: { n: number; suffix?: string }) {
   const up = n >= 0
   return (
-    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${up ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-300'}`}>
       {up ? '↑' : '↓'} {Math.abs(n)}{suffix}
     </span>
   )
@@ -82,13 +83,13 @@ function DeltaBadge({ n, suffix = '%' }: { n: number; suffix?: string }) {
 
 function StatusPill({ s }: { s: string }) {
   const map: Record<string, string> = {
-    settled: 'bg-emerald-50 text-emerald-600',
-    pending: 'bg-amber-50 text-amber-600',
-    failed:  'bg-red-50 text-red-500',
+    settled: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    pending: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    failed:  'bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-300',
   }
   const label: Record<string, string> = { settled: 'Settled', pending: 'Pending', failed: 'Failed' }
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${map[s] ?? 'bg-gray-100 text-gray-500'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${map[s] ?? 'bg-[rgb(var(--ap-ov,0_0_0)/0.06)] text-[var(--ap-ink-3,#5b6472)]'}`}>
       {label[s] ?? s}
     </span>
   )
@@ -96,7 +97,7 @@ function StatusPill({ s }: { s: string }) {
 
 function ChipLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: '#6b7280' }}>
+    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgb(var(--ap-ov) / 0.07)', color: 'var(--ap-ink-3)' }}>
       {children}
     </span>
   )
@@ -107,7 +108,7 @@ function DarkTip({ active, payload, label, fmt }: {
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#1f2937', borderRadius: 10, padding: '7px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+    <div style={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: '7px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
       {label && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 2 }}>{label}</p>}
       <p style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{fmt ? fmt(payload[0].value) : payload[0].value.toLocaleString()}</p>
     </div>
@@ -160,21 +161,21 @@ function StatTile({ label, value, icon: Icon, caption, chart, delta, delay = 0 }
   return (
     <Card delay={delay} className="!rounded-[20px] !p-5">
       <div className="flex items-start justify-between gap-3">
-        <span className="flex items-center gap-2 text-[17px] leading-6 font-medium text-gray-400">
+        <span className="flex items-center gap-2 text-[17px] leading-6 font-medium text-[var(--ap-ink-4,#6b7280)]">
           {label}
           <Info className="size-4 shrink-0" aria-hidden />
         </span>
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-[12px] border border-black/[0.08] text-[#265ee4]">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-[12px] border border-[rgb(var(--ap-ov,0_0_0)/0.08)] text-[var(--ap-accent,#265ee4)]">
           <Icon className="size-5" />
         </span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-2xl leading-9 font-semibold tracking-tight whitespace-nowrap text-[#111827]">{value}</div>
+          <div className="text-2xl leading-9 font-semibold tracking-tight whitespace-nowrap text-[var(--ap-ink,#111827)]">{value}</div>
         </div>
         {chart && <div className="h-14 w-24 shrink-0">{chart}</div>}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
+      <div className="mt-2 flex items-center gap-2 text-xs text-[var(--ap-ink-4,#6b7280)]">
         {delta !== undefined && <DeltaBadge n={delta} suffix="" />}
         {caption && <span className="truncate">{caption}</span>}
       </div>
@@ -205,12 +206,12 @@ function RevenueTracker({ trend, thisMonth, delay = 0 }: {
   return (
     <Card delay={delay} className="h-full !rounded-[20px] !p-5">
       <div className="flex items-start justify-between gap-3">
-        <span className="flex items-center gap-2 text-[20px] leading-7 font-medium text-gray-400">
+        <span className="flex items-center gap-2 text-[20px] leading-7 font-medium text-[var(--ap-ink-4,#6b7280)]">
           Revenue Tracker
           <Info className="size-4 shrink-0" aria-hidden />
         </span>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Chart range" className="text-[#111827]" />}>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Chart range" className="text-[var(--ap-ink,#111827)]" />}>
             <EllipsisVertical />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40 rounded-[12px] p-1.5">
@@ -224,23 +225,23 @@ function RevenueTracker({ trend, thisMonth, delay = 0 }: {
         </DropdownMenu>
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-[28px] leading-9 font-semibold tracking-tight text-[#111827]">{formatRp(thisMonth)}</span>
+        <span className="text-[28px] leading-9 font-semibold tracking-tight text-[var(--ap-ink,#111827)]">{formatRp(thisMonth)}</span>
         {delta !== null && <DeltaBadge n={delta} />}
       </div>
       <div className="mt-4 flex items-center justify-center gap-3">
-        <span className="inline-flex items-center gap-2 text-sm text-[#111827]">
+        <span className="inline-flex items-center gap-2 text-sm text-[var(--ap-ink,#111827)]">
           <span className="h-3 w-6 rounded-full" style={{ background: BLUE }} />Latest month
         </span>
-        <span className="inline-flex items-center gap-2 text-sm text-[#111827]">
+        <span className="inline-flex items-center gap-2 text-sm text-[var(--ap-ink,#111827)]">
           <span className="h-3 w-6 rounded-full" style={{ background: BLUE_SOFT }} />Previous months
         </span>
       </div>
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={data} margin={{ top: 16, right: 4, left: 0, bottom: 0 }} barCategoryGap="22%">
-          <CartesianGrid vertical={false} stroke="rgba(17,24,39,0.07)" />
-          <XAxis dataKey="name" tick={{ fontSize: 13, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 13, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={formatK} width={54} />
-          <Tooltip cursor={{ fill: 'rgba(17,24,39,0.04)' }} content={<DarkTip fmt={formatRp} />} />
+          <CartesianGrid vertical={false} stroke="rgb(var(--ap-ov) / 0.08)" />
+          <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'var(--ap-ink-4)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 13, fill: 'var(--ap-ink-4)' }} axisLine={false} tickLine={false} tickFormatter={formatK} width={54} />
+          <Tooltip cursor={{ fill: 'rgb(var(--ap-ov) / 0.05)' }} content={<DarkTip fmt={formatRp} />} />
           <Bar dataKey="value" radius={[10, 10, 10, 10]} minPointSize={6} isAnimationActive={false}>
             {data.map((d, i) => <Cell key={d.name + i} fill={i === data.length - 1 ? BLUE : BLUE_SOFT} />)}
           </Bar>
@@ -268,27 +269,27 @@ function RecentPayments({ payments, delay = 0 }: { payments: AdminStatsPayment[]
         </TabsList>
       </Tabs>
       {list.length === 0 ? (
-        <p className="py-6 text-center text-xs" style={{ color: '#9ca3af' }}>No payments found.</p>
+        <p className="py-6 text-center text-xs" style={{ color: 'var(--ap-ink-4)' }}>No payments found.</p>
       ) : (
         <div>
           {list.map((p, i) => (
             <div key={p.orderId} className="flex items-center gap-3 py-2.5"
-              style={{ borderTop: i > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+              style={{ borderTop: i > 0 ? '1px solid var(--ap-line)' : 'none' }}>
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
                 style={{ backgroundColor: 'rgba(38,94,228,0.1)' }}>
-                <ArrowLeftRight className="size-3.5 text-[#265ee4]" />
+                <ArrowLeftRight className="size-3.5 text-[var(--ap-accent,#265ee4)]" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate" style={{ color: '#111827' }}>
+                <div className="text-xs font-medium truncate" style={{ color: 'var(--ap-ink)' }}>
                   {p.userEmail ?? p.orderId.slice(0, 14) + '…'}
                 </div>
-                <div className="text-[11px]" style={{ color: '#9ca3af' }}>
+                <div className="text-[11px]" style={{ color: 'var(--ap-ink-4)' }}>
                   {new Date(p.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <StatusPill s={p.status} />
-                <div className="text-xs font-semibold" style={{ color: '#111827' }}>{formatRp(Number(p.grossAmount))}</div>
+                <div className="text-xs font-semibold" style={{ color: 'var(--ap-ink)' }}>{formatRp(Number(p.grossAmount))}</div>
               </div>
             </div>
           ))}
@@ -306,7 +307,7 @@ function PlanBreakdown({ total, pro, delay = 0 }: { total: number; pro: number; 
     { label: 'Pro', count: pro, color: BLUE },
     { label: 'Free', count: free, color: BLUE_SOFT },
   ]
-  const donut = total > 0 ? rows.map(r => ({ name: r.label, value: r.count, fill: r.color })) : [{ name: 'Empty', value: 1, fill: '#e5e7eb' }]
+  const donut = total > 0 ? rows.map(r => ({ name: r.label, value: r.count, fill: r.color })) : [{ name: 'Empty', value: 1, fill: 'rgb(var(--ap-ov) / 0.1)' }]
 
   return (
     <Card delay={delay} className="!rounded-[20px] !p-5">
@@ -334,16 +335,16 @@ function PlanBreakdown({ total, pro, delay = 0 }: { total: number; pro: number; 
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[34px] leading-10 font-semibold tracking-tight text-[#111827]">{pct(pro)}%</span>
-          <span className="text-base text-gray-500">Pro users</span>
+          <span className="text-[34px] leading-10 font-semibold tracking-tight text-[var(--ap-ink,#111827)]">{pct(pro)}%</span>
+          <span className="text-base text-[var(--ap-ink-3,#5b6472)]">Pro users</span>
         </div>
       </div>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
         {rows.map(r => (
           <div key={r.label} className="flex items-center gap-2.5">
             <span className="size-3.5 shrink-0 rounded-[4px]" style={{ background: r.color }} />
-            <span className="text-sm text-[#111827]">{r.label}</span>
-            <span className="text-sm text-gray-500">{pct(r.count)}%</span>
+            <span className="text-sm text-[var(--ap-ink,#111827)]">{r.label}</span>
+            <span className="text-sm text-[var(--ap-ink-3,#5b6472)]">{pct(r.count)}%</span>
           </div>
         ))}
       </div>
@@ -360,12 +361,12 @@ function TopUsers({ users, delay = 0 }: { users: TopUser[]; delay?: number }) {
     <Card delay={delay}>
       <CardHeader icon={UsersRound} title="Top Users" right={<SeeAll href="/admin/users" />} />
       {users.length === 0 ? (
-        <p className="py-6 text-center text-xs" style={{ color: '#9ca3af' }}>No usage data yet.</p>
+        <p className="py-6 text-center text-xs" style={{ color: 'var(--ap-ink-4)' }}>No usage data yet.</p>
       ) : (
         <div>
           {users.map((u, i) => (
             <div key={u.email} className="flex items-center gap-3 py-2"
-              style={{ borderTop: i > 0 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+              style={{ borderTop: i > 0 ? '1px solid var(--ap-line)' : 'none' }}>
               <Avatar className="size-9">
                 {u.avatarUrl && <AvatarImage src={u.avatarUrl} alt="" />}
                 <AvatarFallback className="text-sm text-white" style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
@@ -373,14 +374,14 @@ function TopUsers({ users, delay = 0 }: { users: TopUser[]; delay?: number }) {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-[#111827]">
+                <div className="truncate text-sm font-medium text-[var(--ap-ink,#111827)]">
                   {u.username || u.email.split('@')[0]}
                 </div>
-                <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-black/[0.07]">
+                <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[rgb(var(--ap-ov,0_0_0)/0.07)]">
                   <div className="h-full rounded-full bg-[#265ee4]" style={{ width: `${(u.totalUsage / max) * 100}%` }} />
                 </div>
               </div>
-              <span className="ml-2 w-10 shrink-0 text-right text-sm font-semibold text-[#111827]">{u.totalUsage}</span>
+              <span className="ml-2 w-10 shrink-0 text-right text-sm font-semibold text-[var(--ap-ink,#111827)]">{u.totalUsage}</span>
             </div>
           ))}
         </div>
@@ -403,7 +404,7 @@ function DashGauge({ pct, color }: { pct: number; color: string }) {
         const a = Math.PI - (i / (N - 1)) * Math.PI
         const x1 = cx + r1 * Math.cos(a), y1 = cy - r1 * Math.sin(a)
         const x2 = cx + r2 * Math.cos(a), y2 = cy - r2 * Math.sin(a)
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={i < filled ? color : '#eceef2'} strokeWidth={10} strokeLinecap="round" />
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={i < filled ? color : 'rgb(var(--ap-ov) / 0.1)'} strokeWidth={10} strokeLinecap="round" />
       })}
     </svg>
   )
@@ -438,16 +439,16 @@ function SystemHealth({ health, onRefresh, delay = 0 }: { health: HealthState; o
       <div className="relative mx-auto mt-3 h-[124px] w-[230px]">
         <DashGauge pct={pct} color={color} />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
-          <span className="text-[30px] leading-9 font-semibold tracking-tight text-[#111827]">{data ? `${pct}%` : '-'}</span>
+          <span className="text-[30px] leading-9 font-semibold tracking-tight text-[var(--ap-ink,#111827)]">{data ? `${pct}%` : '-'}</span>
         </div>
       </div>
-      <p className="mt-1 text-center text-sm text-gray-500">Health score{data ? ` · up ${fmtUp(data.uptimeSeconds)}` : ''}</p>
+      <p className="mt-1 text-center text-sm text-[var(--ap-ink-3,#5b6472)]">Health score{data ? ` · up ${fmtUp(data.uptimeSeconds)}` : ''}</p>
       <ul className="mt-auto space-y-2 pt-4">
         {(data?.checks ?? []).map(c => (
           <li key={c.id} className="flex items-center gap-2.5 text-sm">
             <span className="size-2 shrink-0 rounded-full" style={{ background: HEALTH_COLOR[c.status] }} aria-label={c.status} />
-            <span className="font-medium text-[#111827]">{c.name}</span>
-            <span className="ml-auto truncate text-xs text-gray-400" title={c.detail}>{c.detail}</span>
+            <span className="font-medium text-[var(--ap-ink,#111827)]">{c.name}</span>
+            <span className="ml-auto truncate text-xs text-[var(--ap-ink-4,#6b7280)]" title={c.detail}>{c.detail}</span>
           </li>
         ))}
       </ul>
@@ -462,8 +463,8 @@ function ChartHeader({ title, subtitle, right }: { title: string; subtitle: stri
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h3 className="text-base leading-6 font-semibold text-[#111827]">{title}</h3>
-        <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>
+        <h3 className="text-base leading-6 font-semibold text-[var(--ap-ink,#111827)]">{title}</h3>
+        <p className="mt-0.5 text-sm text-[var(--ap-ink-3,#5b6472)]">{subtitle}</p>
       </div>
       {right}
     </div>
@@ -472,7 +473,7 @@ function ChartHeader({ title, subtitle, right }: { title: string; subtitle: stri
 
 function RangeChip({ label }: { label: string }) {
   return (
-    <span className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[12px] border border-black/[0.1] bg-white px-3.5 text-sm font-medium text-[#111827] shadow-[0_1px_2px_rgba(17,24,39,0.06)]">
+    <span className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[12px] border border-[rgb(var(--ap-ov,0_0_0)/0.1)] bg-[var(--ap-surface,#fff)] px-3.5 text-sm font-medium text-[var(--ap-ink,#111827)] shadow-[0_1px_2px_rgba(17,24,39,0.06)]">
       <CalendarDays className="size-4" />{label}
     </span>
   )
@@ -484,9 +485,9 @@ function TrackBars({ data, height = 200, barSize = 44 }: { data: BarDatum[]; hei
     <>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} barSize={barSize} margin={{ top: 16, right: 4, left: 0, bottom: 0 }}>
-          <CartesianGrid vertical={false} stroke="rgba(17,24,39,0.12)" strokeDasharray="4 4" />
-          <XAxis dataKey="name" tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} tickFormatter={formatK} width={40} allowDecimals={false} />
+          <CartesianGrid vertical={false} stroke="rgb(var(--ap-ov) / 0.14)" strokeDasharray="4 4" />
+          <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'var(--ap-ink-3)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 13, fill: 'var(--ap-ink-3)' }} axisLine={false} tickLine={false} tickFormatter={formatK} width={40} allowDecimals={false} />
           <Tooltip content={<DarkTip />} cursor={false} />
           <Bar dataKey="value" radius={[5, 5, 0, 0]} minPointSize={4} isAnimationActive={false}
             background={{ fill: 'rgba(38,94,228,0.08)', radius: [5, 5, 0, 0] as unknown as number }}>
@@ -528,18 +529,20 @@ function DocsByType({ prd, quotation, prototype, specs, delay = 0 }: {
   return (
     <Card delay={delay} className="flex flex-col">
       <CardHeader icon={FileText} title="Documents by Type" right={<ChipLabel>All-time</ChipLabel>} />
-      {/* One segmented bar: each column's width follows its share of all documents. */}
-      <div className="flex flex-1 items-center gap-2">
+      {/* Equal columns that can never overflow the card; each bar fills by its share of all documents. */}
+      <div className="grid flex-1 grid-cols-[repeat(auto-fit,minmax(96px,1fr))] content-center gap-x-4 gap-y-6">
         {data.map(d => {
-          const share = total > 0 ? d.value / total : 1 / data.length
+          const share = total > 0 ? d.value / total : 0
           return (
-            <div key={d.name} className="min-w-[80px]" style={{ flex: `${Math.max(share, 0.08)} 1 0%` }}>
-              <p className="truncate text-sm text-[#111827]">{d.name}</p>
+            <div key={d.name} className="min-w-0">
+              <p className="truncate text-sm text-[var(--ap-ink,#111827)]">{d.name}</p>
               <div className="mt-1.5 flex items-center gap-2 border-l-2 pl-2" style={{ borderColor: d.fill }}>
-                <span className="text-sm font-semibold text-[#111827]">{d.value.toLocaleString()}</span>
-                <span className="text-xs text-gray-400">{Math.round(share * (total > 0 ? 100 : 0))}%</span>
+                <span className="text-sm font-semibold text-[var(--ap-ink,#111827)]">{d.value.toLocaleString()}</span>
+                <span className="text-xs text-[var(--ap-ink-4,#6b7280)]">{Math.round(share * 100)}%</span>
               </div>
-              <div className="mt-3 h-5 rounded-[6px]" style={{ background: d.fill }} />
+              <div className="mt-3 h-5 overflow-hidden rounded-[6px] bg-[rgb(var(--ap-ov,0_0_0)/0.05)]">
+                <div className="h-full rounded-[6px]" style={{ background: d.fill, width: `${Math.max(share * 100, d.value > 0 ? 6 : 0)}%` }} />
+              </div>
             </div>
           )
         })}
@@ -570,6 +573,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthState>({ status: 'loading' })
+  const [refreshSeconds] = useRefreshSeconds()
 
   const load = useCallback(async () => {
     try { setStats(await fetchAdminStats()); setError(null) }
@@ -583,19 +587,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void load(); void loadHealth()
-    // Keep the dashboard live: refresh every 30s while the tab is visible, and on return to the tab.
+    // Keep the dashboard live: refresh on the interval chosen in Settings while the tab is visible, and on return to the tab.
     const tick = () => { if (document.visibilityState === 'visible') { void load(); void loadHealth() } }
-    const id = setInterval(tick, 30_000)
+    const id = refreshSeconds > 0 ? setInterval(tick, refreshSeconds * 1000) : undefined
     document.addEventListener('visibilitychange', tick)
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick) }
-  }, [load, loadHealth])
+    return () => { if (id) clearInterval(id); document.removeEventListener('visibilitychange', tick) }
+  }, [load, loadHealth, refreshSeconds])
 
   if (error && !stats) return (
-    <div className="m-10 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>
+    <div className="m-10 rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-5 py-4 text-sm text-red-700 dark:text-red-300">{error}</div>
   )
   if (!stats) return (
-    <div className="flex h-full items-center justify-center gap-3 text-sm" style={{ color: '#9ca3af' }}>
-      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+    <div className="flex h-full items-center justify-center gap-3 text-sm" style={{ color: 'var(--ap-ink-4)' }}>
+      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--ap-ov,0_0_0)/0.1)] border-t-gray-500" />
       Loading…
     </div>
   )
@@ -611,8 +615,8 @@ export default function DashboardPage() {
       <div className="flex flex-col h-full">
         {/* header */}
         <header className="shrink-0 px-6 pt-2 pb-5">
-          <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[#111827]">Dashboard</h1>
-          <p className="mt-1.5 text-sm text-black/45">Overview for this month.</p>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--ap-ink,#111827)]">Dashboard</h1>
+          <p className="mt-1.5 text-sm text-[var(--ap-ink-4,#6b7280)]">Overview for this month.</p>
         </header>
 
         <div className="flex-1 overflow-y-auto px-10 pb-10">
@@ -620,7 +624,7 @@ export default function DashboardPage() {
 
             {/* expiry alert */}
             {stats.expiringSubsCount > 0 && (
-              <div className="fade-up flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-5 py-3.5 text-sm text-yellow-700">
+              <div className="fade-up flex items-center gap-3 rounded-2xl border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/10 px-5 py-3.5 text-sm text-yellow-800 dark:text-yellow-200">
                 <TriangleAlert className="size-[15px] shrink-0 text-amber-400" />
                 <span><strong className="font-semibold">{stats.expiringSubsCount}</strong> subscription{stats.expiringSubsCount > 1 ? 's' : ''} expire within 7 days.</span>
               </div>
