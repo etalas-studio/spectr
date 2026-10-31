@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { ArrowUp, File as FileIcon, Image as ImageIcon, Loader2, Paperclip, X } from 'lucide-react'
-import { createConversationLocal, type LocalConversation, type ConversationType } from '../../lib/conversations'
+import { createConversationLocal, titleFromPrompt, type LocalConversation, type ConversationType } from '../../lib/conversations'
 import { uploadAttachment, createMessage, type Attachment } from '../../api/conversations'
 import { DeliverableTypeSelect } from '../DeliverableTypeSelect'
 import { Badge } from '@/components/ui/badge'
@@ -84,7 +84,7 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
     setIsSubmitting(true)
     setError(null)
     try {
-      const local = await createConversationLocal({ type: 'general', pendingType: pendingType || undefined, summary: prompt.trim(), description: prompt.trim(), projectId: projectId ?? undefined })
+      const local = await createConversationLocal({ type: 'general', pendingType: pendingType || undefined, summary: titleFromPrompt(prompt), description: prompt.trim(), projectId: projectId ?? undefined })
       const uploaded: Attachment[] = []
       for (const a of attachments) {
         try { uploaded.push(await uploadAttachment(dataUrlToBlob(a.dataUrl), a.name, local.id)) } catch { /* skip failed upload */ }
@@ -158,8 +158,8 @@ export function PromptBox({ defaultType = 'general', onSuccess, usage, projectId
       <div className="flex flex-wrap items-center gap-2 px-4 pb-4">
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
         <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-        <Button variant="pill" size="icon-xl" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-4" /></Button>
-        <Button variant="pill" className="h-10 gap-2 px-4" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-4" /> Attach image</Button>
+        <Button variant="pill" size="icon-lg" className="size-8" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-3.5" /></Button>
+        <Button variant="pill" className="h-8 gap-1.5 px-3 text-[13px]" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-3.5" /> Attach image</Button>
         <DeliverableTypeSelect value={pendingType} onChange={setPendingType} />
         <Button
           variant="primary"

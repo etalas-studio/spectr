@@ -29,11 +29,11 @@ export function DeliverableTypeSelect({
 }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v ?? '')}>
-      <SelectTrigger className="ap-pill h-10 gap-2 rounded-[12px] border-black/[0.08] bg-white px-4 text-sm font-medium text-gray-700 hover:bg-white">
-        <FileText className="size-4" />
+      <SelectTrigger className="ap-pill h-8 gap-1.5 rounded-[12px] border-black/[0.08] bg-white px-3 text-[13px] font-medium text-gray-700 hover:bg-white">
+        <FileText className="size-3.5" />
         <SelectValue>{(v) => (v ? LABEL_BY_VALUE[v as string] : 'Document type')}</SelectValue>
         <SelectIcon>
-          <ChevronDownIcon className="size-3.5 text-gray-400" />
+          <ChevronDownIcon className="size-3 text-gray-400" />
         </SelectIcon>
       </SelectTrigger>
       <SelectContent>

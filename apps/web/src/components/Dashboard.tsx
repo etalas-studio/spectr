@@ -380,7 +380,7 @@ export default function Dashboard({ onBack: _onBack }: { onBack: () => void }) {
     )
   }
 
-  const title = chatState ? (currentConversation?.summary ?? chatState.prompt) : activeNav === 'documents' ? 'Artifacts' : tr('dash_new_project')
+  const title = chatState ? (currentConversation?.summary ?? chatState.prompt) : activeNav === 'documents' ? 'Artifacts' : composerProjectId ? tr('dash_new_chat') : tr('dash_new_project')
   const planLabel = sub?.planSlug === 'pro' ? 'Pro' : 'Starter'
 
   if (!subLoading && sub !== undefined && !sub?.planSlug) {

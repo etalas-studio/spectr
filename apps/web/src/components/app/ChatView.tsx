@@ -436,8 +436,8 @@ export default function ChatView({
           <div className="flex items-center gap-2 px-3.5 pt-1 pb-3.5">
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
             <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-            <Button variant="pill" size="icon-xl" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-4" /></Button>
-            <Button variant="pill" className="h-10 gap-2 px-4" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-4" /> Attach image</Button>
+            <Button variant="pill" size="icon-lg" className="size-8" aria-label="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="size-3.5" /></Button>
+            <Button variant="pill" className="h-8 gap-1.5 px-3 text-[13px]" onClick={() => imageInputRef.current?.click()}><ImageIcon className="size-3.5" /> Attach image</Button>
             <span className="ml-1 hidden text-xs text-[var(--ap-ink-4,#6b7280)] sm:block">↵ send</span>
             <Button
               variant="primary"

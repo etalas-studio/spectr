@@ -46,7 +46,7 @@ const buttonVariants = cva(
           "size-7 rounded-[12px] in-data-[slot=button-group]:rounded-[12px]",
         "icon-lg": "size-9",
         "icon-xl": "size-10",
-        send: "size-11 rounded-full",
+        send: "size-9 rounded-full",
       },
     },
     compoundVariants: [
